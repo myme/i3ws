@@ -21,7 +21,9 @@ executable i3ws
   other-modules:       I3
                      , I3.IPC
   build-depends:       base >= 4.7 && < 5
+                     , aeson
                      , binary
                      , bytestring
+                     , containers
                      , network
                      , process
