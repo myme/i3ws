@@ -13,12 +13,14 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-library i3ws-lib
+library
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall
   exposed-modules:     I3
-                     , I3.IPC
+  other-modules:       I3.IPC
+                     , I3.Internal
+                     , I3.Workspaces
   build-depends:       base
                      , aeson
                      , binary
@@ -27,13 +29,13 @@ library i3ws-lib
                      , network
                      , process
 
-executable i3ws
+executable i3ws-app
   hs-source-dirs:      app
   main-is:             Main.hs
   default-language:    Haskell2010
   ghc-options:         -Wall
   build-depends:       base >= 4.7 && < 5
-                     , i3ws-lib
+                     , i3ws
 
 test-suite i3ws-test
   type:                exitcode-stdio-1.0
@@ -42,6 +44,6 @@ test-suite i3ws-test
   default-language:    Haskell2010
   ghc-options:         -Wall
   build-depends:       base >= 4.7 && < 5
-                     , i3ws-lib
+                     , i3ws
                      , hspec
                      , QuickCheck
