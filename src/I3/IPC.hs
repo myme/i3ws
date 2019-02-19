@@ -56,6 +56,10 @@ data Request = Request RequestT ByteString deriving Show
 data Response = Response ResponseT ByteString deriving Show
 data Event = Event EventT ByteString deriving Show
 
+debug :: String -> IO ()
+debug = when debugEnabled . putStrLn
+  where debugEnabled = False
+
 getSocketPath :: IO FilePath
 getSocketPath =
   head . lines <$> readProcess "i3" ["--get-socketpath"] mempty
@@ -89,9 +93,9 @@ encodeMsg (Request type' payload) = runPut $ do
 send :: Socket -> Request -> IO ()
 send sock req = do
   let package = encodeMsg req
-  putStrLn ("Sending: " <> show package)
+  debug ("Sending: " <> show package)
   bytesSent <- NS.send sock package
-  putStrLn ("Sent " <> show bytesSent <> " bytes")
+  debug ("Sent " <> show bytesSent <> " bytes")
 
 decodeHeader :: ByteString -> (Either EventT ResponseT, Int)
 decodeHeader = runGet getHeader where
