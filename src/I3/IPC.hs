@@ -112,19 +112,22 @@ decodeHeader = runGet getHeader where
       else Right <$> getType t
     pure (type', fromIntegral len)
 
-recv :: Socket -> IO Response
-recv sock = do
+recvPacket :: Socket -> IO (Either EventT ResponseT, ByteString)
+recvPacket sock = do
   let headerLength = B8.length magic + 4 + 4 -- Magic + 2x 32 bit ints
   (type', payloadLength) <- decodeHeader <$> NS.recv sock (fromIntegral headerLength)
   payload <- NS.recv sock (fromIntegral payloadLength)
+  pure (type', payload)
+
+recv :: Socket -> IO Response
+recv sock = do
+  (type', payload) <- recvPacket sock
   resType <- either (\_ -> fail "Unexpected Event") pure type'
   pure (Response resType payload)
 
 recvEvent :: Socket -> IO Event
 recvEvent sock = do
-  let headerLength = B8.length magic + 4 + 4 -- Magic + 2x 32 bit ints
-  (type', payloadLength) <- decodeHeader <$> NS.recv sock (fromIntegral headerLength)
-  payload <- NS.recv sock (fromIntegral payloadLength)
+  (type', payload) <- recvPacket sock
   evType <- either pure (\_ -> fail "Expecting Event") type'
   pure (Event evType payload)
 
