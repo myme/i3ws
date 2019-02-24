@@ -28,6 +28,7 @@ library
                      , containers
                      , network
                      , process
+                     , utf8-string
 
 executable i3ws-app
   hs-source-dirs:      app
