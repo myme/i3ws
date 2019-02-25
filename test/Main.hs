@@ -1,13 +1,29 @@
 module Main where
 
-import Test.Hspec
 import I3.Workspaces
+import Test.Hspec
 import Test.QuickCheck
--- import Control.Exception (evaluate)
+
+newtype Alpha = Alpha String deriving Show
+
+instance Arbitrary Alpha where
+  arbitrary = Alpha <$> listOf (elements (['A'..'Z'] <> ['a'..'z']))
 
 main :: IO ()
 main = hspec $ do
   describe "I3.Workspaces" $ do
+    describe "moveLeft" $ do
+      it "moving leftmost is identity" $ do
+        property $ \(NonEmpty ws) ->
+          let ns = renumber ws
+          in moveLeft (head ns) ns `shouldBe` ns
+
+    describe "moveRight" $ do
+      it "moving rightmost is identity" $ do
+        property $ \(NonEmpty ws) ->
+          let ns = renumber ws
+          in moveRight (last ns) ns `shouldBe` ns
+
     describe "renumber" $ do
       it "is unchanged with sequenced numbers" $ do
         renumber ["1", "2", "3"] `shouldBe` ["1", "2", "3"]
@@ -30,10 +46,8 @@ main = hspec $ do
           in renames !! n `shouldBe` renames !! m
 
     describe "parseName" $ do
-      let noNumString = listOf $ elements (['A'..'Z'] <> ['a'..'z'])
-
       it "Always no number" $ do
-        property $ forAll noNumString $ \s ->
+        property $ \(Alpha s) ->
           parseName s `shouldBe` (Nothing, s)
 
       it "Just number" $ do
@@ -48,9 +62,9 @@ main = hspec $ do
           in parseName (show n <> s) `shouldBe` (Just n, "")
 
       it "With number, no colon" $ do
-        property $ forAll noNumString $ \s (Positive n) ->
+        property $ \(Alpha s) (Positive n) ->
           parseName (show n <> " " <> s) `shouldBe` (Just n, s)
 
       it "With number and colon" $ do
-        property $ forAll noNumString $ \s (Positive n) ->
+        property $ \(Alpha s) (Positive n) ->
           parseName (show n <> ": " <> s) `shouldBe` (Just n, s)
