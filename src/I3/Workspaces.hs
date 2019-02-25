@@ -59,18 +59,19 @@ rename i3 old new = do
     res <- invoke sock (Request RunCommand cmd)
     print res
 
-moveRight :: String -> [String] -> [String]
-moveRight current workspaces = renumber ws
-  where ws = case break (== current) workspaces of
-               (_, []) -> workspaces
-               (pre, c:post) -> pre <> post <> [c]
+moveRight :: Int -> [String] -> [String]
+moveRight idx workspaces = renumber $
+  case splitAt idx workspaces of
+    (_, []) -> workspaces
+    (_, [_]) -> workspaces
+    (pre, c:n:post) -> pre <> (n : c : post)
 
-moveLeft :: String -> [String] -> [String]
-moveLeft current workspaces = renumber ws
-  where ws = case break (== current) workspaces of
-               (_, []) -> workspaces
-               ([], _) -> workspaces
-               (pre, c:post) -> init pre <> [c, last pre] <> post
+moveLeft :: Int -> [String] -> [String]
+moveLeft idx workspaces = renumber $
+  case splitAt idx workspaces of
+    (_, []) -> workspaces
+    ([], _) -> workspaces
+    (pre, c:post) -> init pre <> (c : last pre : post)
 
 assignWorkspaceNumbers :: I3 -> IO ()
 assignWorkspaceNumbers i3 = do

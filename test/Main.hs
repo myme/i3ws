@@ -4,7 +4,7 @@ import I3.Workspaces
 import Test.Hspec
 import Test.QuickCheck
 
-newtype Alpha = Alpha String deriving Show
+newtype Alpha = Alpha { getAlpha :: String } deriving Show
 
 instance Arbitrary Alpha where
   arbitrary = Alpha <$> listOf (elements (['A'..'Z'] <> ['a'..'z']))
@@ -12,17 +12,41 @@ instance Arbitrary Alpha where
 main :: IO ()
 main = hspec $ do
   describe "I3.Workspaces" $ do
-    describe "moveLeft" $ do
-      it "moving leftmost is identity" $ do
+    describe "move" $ do
+      it "moveLeft moving leftmost is identity" $ do
         property $ \(NonEmpty ws) ->
           let ns = renumber ws
-          in moveLeft (head ns) ns `shouldBe` ns
+          in moveLeft 0 ns `shouldBe` ns
 
-    describe "moveRight" $ do
-      it "moving rightmost is identity" $ do
+      it "moveRight moving rightmost is identity" $ do
         property $ \(NonEmpty ws) ->
           let ns = renumber ws
-          in moveRight (last ns) ns `shouldBe` ns
+          in moveRight (length ns - 1) ns `shouldBe` ns
+
+      it "moveRight then moveLeft is identity" $ do
+        property $ \(NonEmpty ws) ->
+          let ns = renumber ws
+          in moveLeft 1 (moveRight 0 ns) `shouldBe` ns
+
+      it "moveLeft then moveRight is identity" $ do
+        property $ \w (NonEmpty ws) ->
+          let ns = renumber (w:ws)
+              last' = length ns - 1
+          in moveRight (last' - 1) (moveLeft last' ns) `shouldBe` ns
+
+      it "moveLeft <n> times places last first" $ do
+        property $ \(Alpha w) (NonEmpty ws) ->
+          let ws' = map getAlpha ws
+              ns = renumber (ws' <> [w])
+              moved = foldl (flip moveRight) ns [length ns, length ns - 1 .. 0]
+          in map (snd . parseName) moved `shouldBe` (w:ws')
+
+      it "moveRight <n> times places head last" $ do
+        property $ \(Alpha w) (NonEmpty ws) ->
+          let ws' = map getAlpha ws
+              ns = renumber (w:ws')
+              moved = foldl (flip moveRight) ns [0 .. length ns]
+          in map (snd . parseName) moved `shouldBe` (ws' <> [w])
 
     describe "renumber" $ do
       it "is unchanged with sequenced numbers" $ do
