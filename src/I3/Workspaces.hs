@@ -44,14 +44,14 @@ getWorkspaces i3 = do
     Nothing -> fail "Invalid workspace response"
     Just res -> pure res
 
-renumberWorkspaces :: [String] -> [String]
-renumberWorkspaces = zipWith newName (map show [1 :: Int ..])
+renumber :: [String] -> [String]
+renumber = zipWith newName (map show [1 :: Int ..])
   where newName i old =
           let (_, label) = parseName old
           in if null label then i else i <> ": " <> label
 
-renameWorkspace :: I3 -> String -> String -> IO ()
-renameWorkspace i3 old new = do
+rename :: I3 -> String -> String -> IO ()
+rename i3 old new = do
   let sock = i3CmdSocket i3
       cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
   res <- invoke sock (Request RunCommand cmd)
@@ -60,8 +60,8 @@ renameWorkspace i3 old new = do
 assignWorkspaceNumbers :: I3 -> IO ()
 assignWorkspaceNumbers i3 = do
   workspaces <- map name <$> getWorkspaces i3
-  let renames = filter (uncurry (/=)) $ zip workspaces (renumberWorkspaces workspaces)
-  traverse_ (uncurry $ renameWorkspace i3) renames
+  let renames = filter (uncurry (/=)) $ zip workspaces (renumber workspaces)
+  traverse_ (uncurry $ rename i3) renames
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)
 parse parser input = case readP_to_S parser input of

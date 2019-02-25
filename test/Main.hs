@@ -8,25 +8,25 @@ import Test.QuickCheck
 main :: IO ()
 main = hspec $ do
   describe "I3.Workspaces" $ do
-    describe "renumberWorkspaces" $ do
+    describe "renumber" $ do
       it "is unchanged with sequenced numbers" $ do
-        renumberWorkspaces ["1", "2", "3"] `shouldBe` ["1", "2", "3"]
+        renumber ["1", "2", "3"] `shouldBe` ["1", "2", "3"]
 
       it "reorders unsorted numbers" $ do
-        renumberWorkspaces ["2", "3", "1"] `shouldBe` ["1", "2", "3"]
+        renumber ["2", "3", "1"] `shouldBe` ["1", "2", "3"]
 
       it "only changes number" $ do
-        renumberWorkspaces ["2: foo", "3: bar", "1: baz"] `shouldBe` ["1: foo", "2: bar", "3: baz"]
+        renumber ["2: foo", "3: bar", "1: baz"] `shouldBe` ["1: foo", "2: bar", "3: baz"]
 
       it "adds number to unnumbered workspaces" $ do
-        renumberWorkspaces ["4: foo", "bar", "baz"] `shouldBe` ["1: foo", "2: bar", "3: baz"]
+        renumber ["4: foo", "bar", "baz"] `shouldBe` ["1: foo", "2: bar", "3: baz"]
 
       it "rename whitespace name" $ do
-        renumberWorkspaces [" "] `shouldBe` ["1"]
+        renumber [" "] `shouldBe` ["1"]
 
       it "has idempotence" $ do
         property $ \xs (Positive n) (Positive m) ->
-          let renames = iterate renumberWorkspaces xs
+          let renames = iterate renumber xs
           in renames !! n `shouldBe` renames !! m
 
     describe "parseName" $ do
