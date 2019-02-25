@@ -60,18 +60,16 @@ rename i3 old new = do
     print res
 
 moveRight :: Int -> [String] -> [String]
-moveRight idx workspaces = renumber $
-  case splitAt idx workspaces of
-    (_, []) -> workspaces
-    (_, [_]) -> workspaces
-    (pre, c:n:post) -> pre <> (n : c : post)
+moveRight idx workspaces = case splitAt idx workspaces of
+  (_, []) -> workspaces
+  (_, [_]) -> workspaces
+  (pre, c:n:post) -> pre <> (n : c : post)
 
 moveLeft :: Int -> [String] -> [String]
-moveLeft idx workspaces = renumber $
-  case splitAt idx workspaces of
-    (_, []) -> workspaces
-    ([], _) -> workspaces
-    (pre, c:post) -> init pre <> (c : last pre : post)
+moveLeft idx workspaces = case splitAt idx workspaces of
+  (_, []) -> workspaces
+  ([], _) -> workspaces
+  (pre, c:post) -> init pre <> (c : last pre : post)
 
 assignWorkspaceNumbers :: I3 -> IO ()
 assignWorkspaceNumbers i3 = do

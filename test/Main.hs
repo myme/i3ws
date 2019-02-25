@@ -14,38 +14,29 @@ main = hspec $ do
   describe "I3.Workspaces" $ do
     describe "move" $ do
       it "moveLeft moving leftmost is identity" $ do
-        property $ \(NonEmpty ws) ->
-          let ns = renumber ws
-          in moveLeft 0 ns `shouldBe` ns
+        property $ \(NonEmpty ws) -> moveLeft 0 ws `shouldBe` ws
 
       it "moveRight moving rightmost is identity" $ do
-        property $ \(NonEmpty ws) ->
-          let ns = renumber ws
-          in moveRight (length ns - 1) ns `shouldBe` ns
+        property $ \(NonEmpty ws) -> moveRight (length ws - 1) ws `shouldBe` ws
 
       it "moveRight then moveLeft is identity" $ do
-        property $ \(NonEmpty ws) ->
-          let ns = renumber ws
-          in moveLeft 1 (moveRight 0 ns) `shouldBe` ns
+        property $ \(NonEmpty ws) -> moveLeft 1 (moveRight 0 ws) `shouldBe` ws
 
       it "moveLeft then moveRight is identity" $ do
-        property $ \w (NonEmpty ws) ->
-          let ns = renumber (w:ws)
-              last' = length ns - 1
-          in moveRight (last' - 1) (moveLeft last' ns) `shouldBe` ns
+        property $ \(NonEmpty ws) ->
+          let last' = length ws
+          in moveRight (last' - 1) (moveLeft last' ws) `shouldBe` ws
 
       it "moveLeft <n> times places last first" $ do
         property $ \(Alpha w) (NonEmpty ws) ->
           let ws' = map getAlpha ws
-              ns = renumber (ws' <> [w])
-              moved = foldl (flip moveRight) ns [length ns, length ns - 1 .. 0]
+              moved = foldl (flip moveLeft) (ws' <> [w]) [length ws', length ws' - 1 .. 0]
           in map (snd . parseName) moved `shouldBe` (w:ws')
 
       it "moveRight <n> times places head last" $ do
         property $ \(Alpha w) (NonEmpty ws) ->
           let ws' = map getAlpha ws
-              ns = renumber (w:ws')
-              moved = foldl (flip moveRight) ns [0 .. length ns]
+              moved = foldl (flip moveRight) (w:ws') [0 .. length ws']
           in map (snd . parseName) moved `shouldBe` (ws' <> [w])
 
     describe "renumber" $ do
