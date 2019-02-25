@@ -29,28 +29,28 @@ main = hspec $ do
           let renames = iterate renumberWorkspaces xs
           in renames !! n `shouldBe` renames !! m
 
-    describe "workspaceNumber" $ do
+    describe "parseName" $ do
       let noNumString = listOf $ elements (['A'..'Z'] <> ['a'..'z'])
 
       it "Always no number" $ do
         property $ forAll noNumString $ \s ->
-          workspaceNumber s `shouldBe` (Nothing, s)
+          parseName s `shouldBe` (Nothing, s)
 
       it "Just number" $ do
-        property $ \(Positive n) -> workspaceNumber (show n) `shouldBe` (Just n, "")
+        property $ \(Positive n) -> parseName (show n) `shouldBe` (Just n, "")
 
       it "Just whitespace" $ do
-        workspaceNumber "  " `shouldBe` (Nothing, "")
+        parseName "  " `shouldBe` (Nothing, "")
 
       it "Number and whitespace" $ do
         property $ \(Positive n) (Positive spaces) ->
           let s = replicate spaces ' '
-          in workspaceNumber (show n <> s) `shouldBe` (Just n, "")
+          in parseName (show n <> s) `shouldBe` (Just n, "")
 
       it "With number, no colon" $ do
         property $ forAll noNumString $ \s (Positive n) ->
-          workspaceNumber (show n <> " " <> s) `shouldBe` (Just n, s)
+          parseName (show n <> " " <> s) `shouldBe` (Just n, s)
 
       it "With number and colon" $ do
         property $ forAll noNumString $ \s (Positive n) ->
-          workspaceNumber (show n <> ": " <> s) `shouldBe` (Just n, s)
+          parseName (show n <> ": " <> s) `shouldBe` (Just n, s)

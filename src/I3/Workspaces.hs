@@ -47,7 +47,7 @@ getWorkspaces i3 = do
 renumberWorkspaces :: [String] -> [String]
 renumberWorkspaces = zipWith newName (map show [1 :: Int ..])
   where newName i old =
-          let (_, label) = workspaceNumber old
+          let (_, label) = parseName old
           in if null label then i else i <> ": " <> label
 
 renameWorkspace :: I3 -> String -> String -> IO ()
@@ -71,8 +71,8 @@ parse parser input = case readP_to_S parser input of
 parseNumber :: (Num a, Read a) => ReadP (Maybe a)
 parseNumber = readMaybe <$> munch1 isDigit
 
-workspaceNumber :: String -> (Maybe Int, String)
-workspaceNumber = parse workspaceName >>> \case
+parseName :: String -> (Maybe Int, String)
+parseName = parse workspaceName >>> \case
   (Just res, _) -> res
   (Nothing, res) -> (Nothing, res)
   where workspaceName = do
