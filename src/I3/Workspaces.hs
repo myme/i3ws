@@ -5,6 +5,7 @@
 module I3.Workspaces where
 
 import Control.Arrow ((>>>))
+import Control.Monad (when)
 import Data.Aeson (FromJSON, decode)
 import Data.ByteString.Lazy.UTF8 (fromString)
 import Data.Char
@@ -54,13 +55,14 @@ rename :: I3 -> String -> String -> IO ()
 rename i3 old new = do
   let sock = i3CmdSocket i3
       cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
-  res <- invoke sock (Request RunCommand cmd)
-  print res
+  when (old /= new) $ do
+    res <- invoke sock (Request RunCommand cmd)
+    print res
 
 assignWorkspaceNumbers :: I3 -> IO ()
 assignWorkspaceNumbers i3 = do
   workspaces <- map name <$> getWorkspaces i3
-  let renames = filter (uncurry (/=)) $ zip workspaces (renumber workspaces)
+  let renames = zip workspaces (renumber workspaces)
   traverse_ (uncurry $ rename i3) renames
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)
