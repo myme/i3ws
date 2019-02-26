@@ -15,7 +15,7 @@ data MockI3 = MockI3
   }
 
 instance Invoker MockI3 where
-  invoke (MockI3 h _) = h
+  invoke = mockHandler
   subscribe = undefined
 
 getMockLog :: MockI3 -> IO [String]
