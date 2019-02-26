@@ -1,17 +1,71 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import I3.Workspaces
-import Test.Hspec
-import Test.QuickCheck
+import           Data.Aeson (decode, encode)
+import           Data.ByteString.Lazy.Char8 (split)
+import           Data.IORef
+import qualified I3.IPC as IPC
+import           I3.IPC hiding (Workspace)
+import           I3.Workspaces
+import           Test.Hspec
+import           Test.QuickCheck hiding (output)
 
 newtype Alpha = Alpha { getAlpha :: String } deriving Show
 
 instance Arbitrary Alpha where
   arbitrary = Alpha <$> listOf (elements (['A'..'Z'] <> ['a'..'z']))
 
+data MockI3 = MockI3 (Request -> IO Response)
+
+instance Invoker MockI3 where
+  invoke (MockI3 h) = h
+  subscribe = undefined
+
+defaultWorkspace :: Workspace
+defaultWorkspace = Workspace
+  { num = 0
+  , name = "workspace"
+  , focused = True
+  , visible = True
+  , rect = Geometry 0 0 1280 1024
+  , output = "DP-1"
+  , urgent = False
+  }
+
+defaultMock :: IO MockI3
+defaultMock = do
+  ref <- newIORef ([] :: [Workspace])
+  let handler (Request GetWorkspaces _) = do
+        ws <- readIORef ref
+        pure (Response IPC.Workspaces (encode ws))
+      handler (Request RunCommand cmd) = case split ' ' cmd of
+        ["workspace", n] -> case decode n of
+          Nothing -> pure (Response Command "{\"success\":false}")
+          Just name' -> do
+            let ws = defaultWorkspace { name = name' }
+            modifyIORef' ref ((:) ws)
+            pure (Response Command "")
+        xs -> print ("Unknown command: " : xs) >> undefined
+      handler _ = undefined
+  pure (MockI3 handler)
+
 main :: IO ()
 main = hspec $ do
   describe "I3.Workspaces" $ do
+    describe "getWorkspaces" $ do
+      it "asdf" $ do
+        mock <- defaultMock
+        ws <- getWorkspaces mock
+        ws `shouldBe` []
+
+    describe "createWorkspace" $ do
+      it "creates a workspace" $ do
+        mock <- defaultMock
+        createWorkspace mock "foo"
+        ws <- getWorkspaces mock
+        map name ws `shouldBe` ["foo"]
+
     describe "move" $ do
       it "moveLeft moving leftmost is identity" $ do
         property $ \(NonEmpty ws) -> moveLeft 0 ws `shouldBe` ws

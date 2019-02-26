@@ -5,8 +5,8 @@
 module I3.Workspaces where
 
 import Control.Arrow ((>>>))
-import Control.Monad (when)
-import Data.Aeson (FromJSON, decode)
+import Control.Monad (void, when)
+import Data.Aeson (FromJSON, ToJSON, decode)
 import Data.ByteString.Lazy.UTF8 (fromString)
 import Data.Char
 import Data.Foldable
@@ -24,6 +24,7 @@ data Geometry = Geometry
   } deriving (Eq, Generic, Show)
 
 instance FromJSON Geometry
+instance ToJSON Geometry
 
 data Workspace = Workspace
   { num :: Int
@@ -36,6 +37,7 @@ data Workspace = Workspace
   } deriving (Eq, Generic, Show)
 
 instance FromJSON Workspace
+instance ToJSON Workspace
 
 getWorkspaces :: Invoker inv => inv -> IO [Workspace]
 getWorkspaces inv = do
@@ -43,6 +45,11 @@ getWorkspaces inv = do
   case decode payload of
     Nothing -> fail "Invalid workspace response"
     Just res -> pure res
+
+createWorkspace :: Invoker inv => inv -> String -> IO ()
+createWorkspace inv name' =
+  let cmd = fromString ("workspace \"" <> name' <> "\"")
+  in void $ invoke inv (Request RunCommand cmd)
 
 renumber :: [String] -> [String]
 renumber = zipWith newName (map show [1 :: Int ..])
