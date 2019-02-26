@@ -61,9 +61,7 @@ renumber = zipWith newName (map show [1 :: Int ..])
 rename :: Invoker inv => inv -> String -> String -> IO ()
 rename inv old new = do
   let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
-  when (old /= new) $ do
-    res <- invoke inv (Request RunCommand cmd)
-    print res
+  when (old /= new) (void $ invoke inv (Request RunCommand cmd))
 
 renameAll :: Invoker inv => inv -> [String] -> [String] -> IO ()
 renameAll inv = traverse_ (uncurry $ rename inv) ... zip
