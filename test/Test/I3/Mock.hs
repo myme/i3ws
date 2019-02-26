@@ -3,17 +3,23 @@
 module Test.I3.Mock where
 
 import           Data.Aeson (decode, encode)
-import           Data.ByteString.Lazy.Char8 (ByteString, split, unpack)
+import           Data.ByteString.Lazy.Char8 (ByteString, split)
 import           Data.IORef
 import qualified I3.IPC as IPC
 import           I3.IPC hiding (Workspace)
 import           I3.Workspaces
 
-newtype MockI3 = MockI3 { mockHandler :: Request -> IO Response }
+data MockI3 = MockI3
+  { mockHandler :: Request -> IO Response
+  , mockGetLog :: IO [String]
+  }
 
 instance Invoker MockI3 where
-  invoke (MockI3 h) = h
+  invoke (MockI3 h _) = h
   subscribe = undefined
+
+getMockLog :: MockI3 -> IO [String]
+getMockLog = mockGetLog
 
 defaultWorkspace :: Workspace
 defaultWorkspace = Workspace
@@ -30,18 +36,22 @@ defaultWorkspace = Workspace
 defaultMock :: IO MockI3
 defaultMock = do
   workspaces <- newIORef mempty
+  mockLog    <- newIORef mempty
 
   let handler (Request GetWorkspaces _) = do
         ws <- readIORef workspaces
         pure (Response IPC.Workspaces (encode ws))
-      handler (Request RunCommand cmd) = do
-        case split ' ' cmd of
-          ["workspace", n] -> switchWorkspace workspaces n
-          ["rename", "workspace", from, "to", to] -> renameWorkspace workspaces from to
-          xs -> print ("Unknown command: " : xs) >> undefined
+      handler (Request RunCommand cmd) = case split ' ' cmd of
+        ["workspace", n] -> switchWorkspace workspaces n
+        ["rename", "workspace", from, "to", to] -> renameWorkspace workspaces from to
+        xs -> print ("Unknown command: " : xs) >> undefined
       handler _ = undefined
 
-  pure (MockI3 handler)
+  let handlerWithLog req = do
+        modifyIORef' mockLog (<> [show req])
+        handler req
+
+  pure (MockI3 handlerWithLog (readIORef mockLog))
 
 renameWorkspace :: IORef [Workspace] -> ByteString -> ByteString -> IO Response
 renameWorkspace ref from to = case (,) <$> decode from <*> decode to of
