@@ -47,15 +47,16 @@ getWorkspaces inv = do
     Just res -> pure res
 
 createWorkspace :: Invoker inv => inv -> String -> IO ()
-createWorkspace inv name' =
+createWorkspace inv name' = do
   let cmd = fromString ("workspace \"" <> name' <> "\"")
-  in void $ invoke inv (Request RunCommand cmd)
+  void $ invoke inv (Request RunCommand cmd)
+  assignWorkspaceNumbers inv
 
 renumber :: [String] -> [String]
 renumber = zipWith newName (map show [1 :: Int ..])
   where newName i old =
           let (_, label) = parseName old
-          in if null label then i else i <> ": " <> label
+          in if null label then i else i <> ":" <> label
 
 rename :: Invoker inv => inv -> String -> String -> IO ()
 rename inv old new = do

@@ -20,11 +20,18 @@ tests = do
         ws `shouldBe` []
 
     describe "createWorkspace" $ do
-      it "creates a workspace" $ do
+      it "creates a new workspace with number" $ do
         mock <- defaultMock
         createWorkspace mock "foo"
         ws <- getWorkspaces mock
-        map name ws `shouldBe` ["foo"]
+        map name ws `shouldBe` ["1:foo"]
+
+      it "creates multiple workspaces with increasing numbers" $ do
+        mock <- defaultMock
+        createWorkspace mock "foo"
+        createWorkspace mock "bar"
+        ws <- getWorkspaces mock
+        map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "move" $ do
       it "moveLeft moving leftmost is identity" $ do
@@ -61,10 +68,10 @@ tests = do
         renumber ["2", "3", "1"] `shouldBe` ["1", "2", "3"]
 
       it "only changes number" $ do
-        renumber ["2: foo", "3: bar", "1: baz"] `shouldBe` ["1: foo", "2: bar", "3: baz"]
+        renumber ["2:foo", "3:bar", "1:baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
 
       it "adds number to unnumbered workspaces" $ do
-        renumber ["4: foo", "bar", "baz"] `shouldBe` ["1: foo", "2: bar", "3: baz"]
+        renumber ["4:foo", "bar", "baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
 
       it "rename whitespace name" $ do
         renumber [" "] `shouldBe` ["1"]
