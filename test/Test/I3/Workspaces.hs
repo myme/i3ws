@@ -11,9 +11,9 @@ instance Arbitrary Alpha where
   arbitrary = Alpha <$> listOf (elements (['A'..'Z'] <> ['a'..'z']))
 
 tests :: Spec
-tests = do
+tests =
   describe "I3.Workspaces" $ do
-    describe "getWorkspaces" $ do
+    describe "getWorkspaces" $
       it "get empty list of workspaces" $ do
         mock <- defaultMock
         ws <- getWorkspaces mock
@@ -34,73 +34,73 @@ tests = do
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "move" $ do
-      it "moveLeft moving leftmost is identity" $ do
+      it "moveLeft moving leftmost is identity" $
         property $ \(NonEmpty ws) -> moveLeft 0 ws `shouldBe` ws
 
-      it "moveRight moving rightmost is identity" $ do
+      it "moveRight moving rightmost is identity" $
         property $ \(NonEmpty ws) -> moveRight (length ws - 1) ws `shouldBe` ws
 
-      it "moveRight then moveLeft is identity" $ do
+      it "moveRight then moveLeft is identity" $
         property $ \(NonEmpty ws) -> moveLeft 1 (moveRight 0 ws) `shouldBe` ws
 
-      it "moveLeft then moveRight is identity" $ do
+      it "moveLeft then moveRight is identity" $
         property $ \(NonEmpty ws) ->
           let last' = length ws
           in moveRight (last' - 1) (moveLeft last' ws) `shouldBe` ws
 
-      it "moveLeft <n> times places last first" $ do
+      it "moveLeft <n> times places last first" $
         property $ \(Alpha w) (NonEmpty ws) ->
           let ws' = map getAlpha ws
               moved = foldl (flip moveLeft) (ws' <> [w]) [length ws', length ws' - 1 .. 0]
           in map (snd . parseName) moved `shouldBe` (w:ws')
 
-      it "moveRight <n> times places head last" $ do
+      it "moveRight <n> times places head last" $
         property $ \(Alpha w) (NonEmpty ws) ->
           let ws' = map getAlpha ws
               moved = foldl (flip moveRight) (w:ws') [0 .. length ws']
           in map (snd . parseName) moved `shouldBe` (ws' <> [w])
 
     describe "renumber" $ do
-      it "is unchanged with sequenced numbers" $ do
+      it "is unchanged with sequenced numbers" $
         renumber ["1", "2", "3"] `shouldBe` ["1", "2", "3"]
 
-      it "reorders unsorted numbers" $ do
+      it "reorders unsorted numbers" $
         renumber ["2", "3", "1"] `shouldBe` ["1", "2", "3"]
 
-      it "only changes number" $ do
+      it "only changes number" $
         renumber ["2:foo", "3:bar", "1:baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
 
-      it "adds number to unnumbered workspaces" $ do
+      it "adds number to unnumbered workspaces" $
         renumber ["4:foo", "bar", "baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
 
-      it "rename whitespace name" $ do
+      it "rename whitespace name" $
         renumber [" "] `shouldBe` ["1"]
 
-      it "has idempotence" $ do
+      it "has idempotence" $
         property $ \xs (Positive n) (Positive m) ->
           let renames = iterate renumber xs
           in renames !! n `shouldBe` renames !! m
 
     describe "parseName" $ do
-      it "Always no number" $ do
+      it "Always no number" $
         property $ \(Alpha s) ->
           parseName s `shouldBe` (Nothing, s)
 
-      it "Just number" $ do
+      it "Just number" $
         property $ \(Positive n) -> parseName (show n) `shouldBe` (Just n, "")
 
-      it "Just whitespace" $ do
+      it "Just whitespace" $
         parseName "  " `shouldBe` (Nothing, "")
 
-      it "Number and whitespace" $ do
+      it "Number and whitespace" $
         property $ \(Positive n) (Positive spaces) ->
           let s = replicate spaces ' '
           in parseName (show n <> s) `shouldBe` (Just n, "")
 
-      it "With number, no colon" $ do
+      it "With number, no colon" $
         property $ \(Alpha s) (Positive n) ->
           parseName (show n <> " " <> s) `shouldBe` (Just n, s)
 
-      it "With number and colon" $ do
+      it "With number and colon" $
         property $ \(Alpha s) (Positive n) ->
           parseName (show n <> ": " <> s) `shouldBe` (Just n, s)
