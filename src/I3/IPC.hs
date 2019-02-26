@@ -2,14 +2,18 @@
 
 module I3.IPC where
 
-import           Control.Monad (when)
-import           Data.Aeson (encode)
+import           Control.Exception (bracket)
+import           Control.Monad (forever, unless, when)
+import           Data.Aeson (decode, encode)
 import           Data.Binary.Get
 import           Data.Binary.Put
 import           Data.Bits
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Char
+import qualified Data.Map.Strict as Map
+import           Data.Maybe (fromMaybe)
+import           I3.Internal
 import           Network.Socket (Socket)
 import qualified Network.Socket as Net
 import qualified Network.Socket.ByteString.Lazy as NS
@@ -55,6 +59,31 @@ data EventT = Workspace
 data Request = Request RequestT ByteString deriving Show
 data Response = Response ResponseT ByteString deriving Show
 data Event = Event EventT ByteString deriving Show
+
+type EventHandler = Event -> IO ()
+
+class Invoker handle where
+  invoke :: handle -> Request -> IO Response
+  subscribe :: handle -> [EventT] -> EventHandler -> IO ()
+
+subscribe' :: [EventT] -> Request
+subscribe' events = Request ReqSubscribe eventsJson
+  where eventsJson = encode $ map (map toLower . show) events
+
+instance Invoker I3 where
+  invoke i3 req = do
+    let sock = i3CmdSocket i3
+    send sock req
+    recv sock
+  subscribe i3 events handler = do
+    let socketPath = i3SocketPath i3
+    bracket (connect socketPath) close $ \sock -> do
+      (Response _ payload) <- invoke i3 (subscribe' events)
+      let success = fromMaybe False (decode payload >>= Map.lookup successKey)
+      unless success $ fail "Event subscription failed!"
+      forever (recvEvent sock >>= handler)
+    where successKey :: String
+          successKey = "success"
 
 debug :: String -> IO ()
 debug = when debugEnabled . putStrLn
@@ -130,12 +159,3 @@ recvEvent sock = do
   (type', payload) <- recvPacket sock
   evType <- either pure (\_ -> fail "Expecting Event") type'
   pure (Event evType payload)
-
-subscribe :: [EventT] -> Request
-subscribe events = Request ReqSubscribe eventsJson
-  where eventsJson = encode $ map (map toLower . show) events
-
-invoke :: Socket -> Request -> IO Response
-invoke sock req = do
-  send sock req
-  recv sock

@@ -1,23 +1,14 @@
 module I3
-  ( initI3
-  , command
-  , subscribeEvents
+  ( Event(..)
   , EventT(..)
-  , Event(..)
-  , getWorkspaces
+  , command
+  , initI3
   ) where
 
-import           Control.Exception (bracket)
-import           Control.Monad (unless, forever, void)
-import           Data.Aeson (decode)
-import           Data.ByteString.Lazy.Char8 (pack)
-import qualified Data.Map.Strict as Map
-import           Data.Maybe
-import           I3.IPC
-import           I3.Internal
-import           I3.Workspaces
-
-type EventHandler = Event -> IO ()
+import Control.Monad (void)
+import Data.ByteString.Lazy.Char8 (pack)
+import I3.IPC
+import I3.Internal
 
 initI3 :: IO I3
 initI3 = do
@@ -27,16 +18,5 @@ initI3 = do
             , i3CmdSocket = cmdSock
             }
 
-command :: I3 -> String -> IO ()
-command i3 cmd = do
-  let sock = i3CmdSocket i3
-  void $ invoke sock (Request RunCommand (pack cmd))
-
-subscribeEvents :: I3 -> [EventT] -> EventHandler -> IO ()
-subscribeEvents i3 events handler = do
-  let socketPath = i3SocketPath i3
-  bracket (connect socketPath) close $ \sock -> do
-    (Response _ payload) <- invoke sock (subscribe events)
-    let success = fromMaybe False (decode payload >>= Map.lookup "success")
-    unless success $ fail "Event subscription failed!"
-    forever (recvEvent sock >>= handler)
+command :: Invoker inv => inv -> String -> IO ()
+command inv cmd = void $ invoke inv (Request RunCommand (pack cmd))

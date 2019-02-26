@@ -18,9 +18,10 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
   exposed-modules:     I3
-  other-modules:       I3.IPC
-                     , I3.Internal
                      , I3.Workspaces
+                     , I3.IPC
+  other-modules:       I3.Internal
+                     , I3.Utils
   build-depends:       base
                      , aeson
                      , binary

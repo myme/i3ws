@@ -12,7 +12,7 @@ import Data.Char
 import Data.Foldable
 import GHC.Generics
 import I3.IPC
-import I3.Internal
+import I3.Utils
 import Text.ParserCombinators.ReadP
 import Text.Read (readMaybe)
 
@@ -21,7 +21,7 @@ data Geometry = Geometry
   , y :: Int
   , width :: Int
   , height :: Int
-  } deriving (Generic, Show)
+  } deriving (Eq, Generic, Show)
 
 instance FromJSON Geometry
 
@@ -33,14 +33,13 @@ data Workspace = Workspace
   , rect :: Geometry
   , output :: String
   , urgent :: Bool
-  } deriving (Generic, Show)
+  } deriving (Eq, Generic, Show)
 
 instance FromJSON Workspace
 
-getWorkspaces :: I3 -> IO [Workspace]
-getWorkspaces i3 = do
-  let sock = i3CmdSocket i3
-  (Response _ payload) <- invoke sock (Request GetWorkspaces mempty)
+getWorkspaces :: Invoker inv => inv -> IO [Workspace]
+getWorkspaces inv = do
+  (Response _ payload) <- invoke inv (Request GetWorkspaces mempty)
   case decode payload of
     Nothing -> fail "Invalid workspace response"
     Just res -> pure res
@@ -51,13 +50,15 @@ renumber = zipWith newName (map show [1 :: Int ..])
           let (_, label) = parseName old
           in if null label then i else i <> ": " <> label
 
-rename :: I3 -> String -> String -> IO ()
-rename i3 old new = do
-  let sock = i3CmdSocket i3
-      cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
+rename :: Invoker inv => inv -> String -> String -> IO ()
+rename inv old new = do
+  let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
   when (old /= new) $ do
-    res <- invoke sock (Request RunCommand cmd)
+    res <- invoke inv (Request RunCommand cmd)
     print res
+
+renameAll :: Invoker inv => inv -> [String] -> [String] -> IO ()
+renameAll inv = traverse_ (uncurry $ rename inv) ... zip
 
 moveRight :: Int -> [String] -> [String]
 moveRight idx workspaces = case splitAt idx workspaces of
@@ -71,11 +72,10 @@ moveLeft idx workspaces = case splitAt idx workspaces of
   ([], _) -> workspaces
   (pre, c:post) -> init pre <> (c : last pre : post)
 
-assignWorkspaceNumbers :: I3 -> IO ()
-assignWorkspaceNumbers i3 = do
-  workspaces <- map name <$> getWorkspaces i3
-  let renames = zip workspaces (renumber workspaces)
-  traverse_ (uncurry $ rename i3) renames
+assignWorkspaceNumbers :: Invoker inv => inv -> IO ()
+assignWorkspaceNumbers inv = do
+  workspaces <- map name <$> getWorkspaces inv
+  renameAll inv workspaces (renumber workspaces)
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)
 parse parser input = case readP_to_S parser input of
