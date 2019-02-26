@@ -23,7 +23,7 @@ getMockLog = mockGetLog
 
 defaultWorkspace :: Workspace
 defaultWorkspace = Workspace
-  { num = 0
+  { num = -1
   , name = "workspace"
   , focused = True
   , visible = True
