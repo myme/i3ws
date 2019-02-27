@@ -1,15 +1,22 @@
 module Main where
 
-import Control.Monad (forM_)
 import I3
-
--- workspaceNumber :: String ->
+import I3.Workspaces
 
 main :: IO ()
 main = do
   i3 <- initI3
-  workspaces <- getWorkspaces i3
-  forM_ workspaces print
+
+  -- Tree
+  -- print =<< getTree i3
+
+  -- Workspaces
+  -- workspaces <- getWorkspaces i3
+  -- forM_ workspaces print
+  assignNumbers i3
+  -- moveFocusedRight i3
+
+  -- Commands
   -- command i3 "exec xcalc"
   -- subscribeEvents i3 [Window] $ \ev -> do
   --   let (Event _ payload) = ev

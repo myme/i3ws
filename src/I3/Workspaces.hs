@@ -50,7 +50,7 @@ createWorkspace :: Invoker inv => inv -> String -> IO ()
 createWorkspace inv name' = do
   let cmd = fromString ("workspace \"" <> name' <> "\"")
   void $ invoke inv (Request RunCommand cmd)
-  assignWorkspaceNumbers inv
+  assignNumbers inv
 
 renumber :: [String] -> [String]
 renumber = zipWith newName (map show [1 :: Int ..])
@@ -78,8 +78,8 @@ moveLeft idx workspaces = case splitAt idx workspaces of
   ([], _) -> workspaces
   (pre, c:post) -> init pre <> (c : last pre : post)
 
-assignWorkspaceNumbers :: Invoker inv => inv -> IO ()
-assignWorkspaceNumbers inv = do
+assignNumbers :: Invoker inv => inv -> IO ()
+assignNumbers inv = do
   workspaces <- map name <$> getWorkspaces inv
   renameAll inv workspaces (renumber workspaces)
 
