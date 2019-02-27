@@ -35,13 +35,16 @@ tests =
 
     describe "move" $ do
       it "moveLeft moving leftmost is identity" $
-        property $ \(NonEmpty ws) -> moveLeft 0 ws `shouldBe` ws
+        property $ \(NonEmpty ws) ->
+          moveLeft 0 ws `shouldBe` ws
 
       it "moveRight moving rightmost is identity" $
-        property $ \(NonEmpty ws) -> moveRight (length ws - 1) ws `shouldBe` ws
+        property $ \(NonEmpty ws) ->
+          moveRight (length ws - 1) ws `shouldBe` ws
 
       it "moveRight then moveLeft is identity" $
-        property $ \(NonEmpty ws) -> moveLeft 1 (moveRight 0 ws) `shouldBe` ws
+        property $ \(NonEmpty ws) ->
+          moveLeft 1 (moveRight 0 ws) `shouldBe` ws
 
       it "moveLeft then moveRight is identity" $
         property $ \(NonEmpty ws) ->
