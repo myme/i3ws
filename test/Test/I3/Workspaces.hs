@@ -1,5 +1,6 @@
 module Test.I3.Workspaces where
 
+import Data.Foldable (traverse_)
 import I3.Workspaces
 import Test.Hspec
 import Test.I3.Mock
@@ -19,49 +20,45 @@ tests =
         ws <- getWorkspaces mock
         ws `shouldBe` []
 
+    let createWorkspaces mock ws = do
+          traverse_ (createWorkspace mock) ws
+          getWorkspaces mock
+
     describe "createWorkspace" $ do
       it "creates a new workspace with number" $ do
         mock <- defaultMock
-        createWorkspace mock "foo"
-        ws <- getWorkspaces mock
+        ws <- createWorkspaces mock ["foo"]
         map name ws `shouldBe` ["1:foo"]
 
       it "creates multiple workspaces with increasing numbers" $ do
         mock <- defaultMock
-        createWorkspace mock "foo"
-        createWorkspace mock "bar"
+        ws <- createWorkspaces mock ["foo", "bar"]
+        map name ws `shouldBe` ["1:foo", "2:bar"]
+
+    describe "moveRight" $ do
+      it "move last is identity" $ do
+        mock <- defaultMock
+        _ <- createWorkspaces mock ["foo", "bar"]
+        moveRight mock
         ws <- getWorkspaces mock
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
-    describe "move" $ do
-      it "moveLeft moving leftmost is identity" $
-        property $ \(NonEmpty ws) ->
-          moveLeft 0 ws `shouldBe` ws
+      it "move left then right is identity" $ do
+        mock <- defaultMock
+        _ <- createWorkspaces mock ["foo", "bar"]
+        moveLeft mock
+        moveRight mock
+        ws <- getWorkspaces mock
+        map name ws `shouldBe` ["1:foo", "2:bar"]
 
-      it "moveRight moving rightmost is identity" $
-        property $ \(NonEmpty ws) ->
-          moveRight (length ws - 1) ws `shouldBe` ws
-
-      it "moveRight then moveLeft is identity" $
-        property $ \(NonEmpty ws) ->
-          moveLeft 1 (moveRight 0 ws) `shouldBe` ws
-
-      it "moveLeft then moveRight is identity" $
-        property $ \(NonEmpty ws) ->
-          let last' = length ws
-          in moveRight (last' - 1) (moveLeft last' ws) `shouldBe` ws
-
-      it "moveLeft <n> times places last first" $
-        property $ \(Alpha w) (NonEmpty ws) ->
-          let ws' = map getAlpha ws
-              moved = foldl (flip moveLeft) (ws' <> [w]) [length ws', length ws' - 1 .. 0]
-          in map (snd . parseName) moved `shouldBe` (w:ws')
-
-      it "moveRight <n> times places head last" $
-        property $ \(Alpha w) (NonEmpty ws) ->
-          let ws' = map getAlpha ws
-              moved = foldl (flip moveRight) (w:ws') [0 .. length ws']
-          in map (snd . parseName) moved `shouldBe` (ws' <> [w])
+    describe "moveLeft" $ do
+      it "moves last to first" $ do
+        mock <- defaultMock
+        _ <- createWorkspaces mock ["foo", "bar", "baz"]
+        moveLeft mock
+        moveLeft mock
+        ws <- getWorkspaces mock
+        map name ws `shouldBe` ["1:baz", "2:foo", "3:bar"]
 
     describe "renumber" $ do
       it "is unchanged with sequenced numbers" $

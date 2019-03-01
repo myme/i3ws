@@ -12,7 +12,6 @@ import Data.Char
 import Data.Foldable
 import GHC.Generics
 import I3.IPC
-import I3.Utils
 import Text.ParserCombinators.ReadP
 import Text.Read (readMaybe)
 
@@ -63,25 +62,40 @@ rename inv old new = do
   let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
   when (old /= new) (void $ invoke inv (Request RunCommand cmd))
 
-renameAll :: Invoker inv => inv -> [String] -> [String] -> IO ()
-renameAll inv = traverse_ (uncurry $ rename inv) ... zip
+renameAll :: Invoker inv => inv -> [(String, String)] -> IO ()
+renameAll inv = traverse_ (uncurry $ rename inv)
 
-moveRight :: Int -> [String] -> [String]
-moveRight idx workspaces = case splitAt idx workspaces of
-  (_, []) -> workspaces
-  (_, [_]) -> workspaces
-  (pre, c:n:post) -> pre <> (n : c : post)
+-- | Generate rename commands for swapping two workspaces.
+reorder :: Workspace -> Workspace -> [(String, String)]
+reorder l r = [(name r, tmp)
+              ,(name l, concatName rn lm)
+              ,(tmp, concatName ln rm)
+              ]
+  where (ln, lm) = parseName (name l)
+        (rn, rm) = parseName (name r)
+        tmp = concatName rn "tmp"
+        concatName n m = maybe "" show n <> (':':m)
 
-moveLeft :: Int -> [String] -> [String]
-moveLeft idx workspaces = case splitAt idx workspaces of
-  (_, []) -> workspaces
-  ([], _) -> workspaces
-  (pre, c:post) -> init pre <> (c : last pre : post)
+-- | Move current workspace one position to the right.
+moveRight :: Invoker inv => inv -> IO ()
+moveRight inv = do
+  ws <- getWorkspaces inv
+  renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
+  where reorder' (l, r) | focused l = reorder l r
+                        | otherwise = []
+
+-- | Move current workspace one position to the left.
+moveLeft :: Invoker inv => inv -> IO ()
+moveLeft inv = do
+  ws <- getWorkspaces inv
+  renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
+  where reorder' (l, r) | focused r = reorder l r
+                        | otherwise = []
 
 assignNumbers :: Invoker inv => inv -> IO ()
 assignNumbers inv = do
   workspaces <- map name <$> getWorkspaces inv
-  renameAll inv workspaces (renumber workspaces)
+  renameAll inv (zip workspaces (renumber workspaces))
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)
 parse parser input = case readP_to_S parser input of
