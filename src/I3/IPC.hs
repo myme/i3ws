@@ -3,7 +3,7 @@
 module I3.IPC where
 
 import           Control.Exception (bracket)
-import           Control.Monad (forever, unless, when)
+import           Control.Monad (void, forever, unless, when)
 import           Data.Aeson (decode, encode)
 import           Data.Binary.Get
 import           Data.Binary.Put
@@ -85,10 +85,6 @@ instance Invoker I3 where
     where successKey :: String
           successKey = "success"
 
-debug :: String -> IO ()
-debug = when debugEnabled . putStrLn
-  where debugEnabled = False
-
 getSocketPath :: IO FilePath
 getSocketPath =
   head . lines <$> readProcess "i3" ["--get-socketpath"] mempty
@@ -122,9 +118,7 @@ encodeMsg (Request type' payload) = runPut $ do
 send :: Socket -> Request -> IO ()
 send sock req = do
   let package = encodeMsg req
-  debug ("Sending: " <> show package)
-  bytesSent <- NS.send sock package
-  debug ("Sent " <> show bytesSent <> " bytes")
+  void $ NS.send sock package
 
 decodeHeader :: ByteString -> (Either EventT ResponseT, Int)
 decodeHeader = runGet getHeader where
