@@ -92,6 +92,7 @@ moveLeft inv = do
   where reorder' (l, r) | focused r = reorder l r
                         | otherwise = []
 
+-- | Assigns sequential numbers to all workspaces.
 assignNumbers :: Invoker inv => inv -> IO ()
 assignNumbers inv = do
   workspaces <- map name <$> getWorkspaces inv
