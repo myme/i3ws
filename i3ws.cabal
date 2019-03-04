@@ -18,9 +18,10 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall
   exposed-modules:     I3
-                     , I3.Workspaces
                      , I3.IPC
+                     , I3.Workspaces
   other-modules:       I3.Internal
+                     , I3.Tree
                      , I3.Utils
   build-depends:       base
                      , aeson
@@ -29,6 +30,7 @@ library
                      , containers
                      , network
                      , process
+                     , text
                      , utf8-string
 
 executable i3ws-app
