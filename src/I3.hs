@@ -20,6 +20,7 @@ initI3 = do
   cmdSock <- connect socketPath
   pure $ I3 { i3SocketPath = socketPath
             , i3CmdSocket = cmdSock
+            , i3Trace = False
             }
 
 command :: Invoker inv => inv -> String -> IO ()

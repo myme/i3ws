@@ -73,8 +73,12 @@ subscribe' events = Request ReqSubscribe eventsJson
 instance Invoker I3 where
   invoke i3 req = do
     let sock = i3CmdSocket i3
+        trace x = when (i3Trace i3) (print x)
+    trace req
     send sock req
-    recv sock
+    res <- recv sock
+    trace res
+    pure res
   subscribe i3 events handler = do
     let socketPath = i3SocketPath i3
     bracket (connect socketPath) close $ \sock -> do
