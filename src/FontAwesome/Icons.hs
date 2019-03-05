@@ -1,4 +1,4 @@
-module Fontawesome.Icons where
+module FontAwesome.Icons where
 
 -- | Font awesome icon codepoints
 icons :: [(String, Char)]
