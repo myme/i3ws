@@ -1,14 +1,14 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module I3.Tree where
 
-import Data.Aeson (eitherDecode, FromJSON(..), ToJSON(..), Value(..))
-import Data.Aeson.TH (deriveJSON, defaultOptions, Options(fieldLabelModifier))
+import Data.Aeson hiding (json)
+import Data.Aeson.TH
 import Data.Aeson.Types (typeMismatch)
+import Data.List (stripPrefix)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (unpack)
-import GHC.Generics (Generic)
 import I3.IPC hiding (ResponseT(Tree), Output, Workspace)
 
 data NodeType = Root | Output | Con | FloatingCon | Workspace | Dockarea
@@ -25,23 +25,49 @@ instance FromJSON NodeType where
     x              -> fail ("Invalid node type" <> unpack x)
   parseJSON x = typeMismatch "NodeTYpe" x
 
-instance ToJSON NodeType where
-  toJSON _ = undefined
+data WindowProps = WindowProps
+  { win_class :: String
+  , win_instance :: String
+  , win_title :: String
+  } deriving (Eq, Show)
 
-data Tree = Tree { id :: Int
-                 , name :: Maybe String
+$(deriveFromJSON
+ defaultOptions {
+     fieldLabelModifier = \n -> fromMaybe n (stripPrefix "win_" n) }
+ ''WindowProps)
+
+data Node = Node { node_id :: Int
+                 , node_name :: Maybe String
                  , node_type :: NodeType
-                 , nodes :: [Tree]
+                 , node_nodes :: [Node]
+                 , node_floating_nodes :: [Node]
+                 , node_window :: Maybe Int
+                 , node_window_properties :: Maybe WindowProps
                  }
-  deriving (Eq, Generic, Show)
+  deriving (Eq, Show)
 
-$(deriveJSON defaultOptions
-  { fieldLabelModifier = \n -> if n == "node_type" then "type" else n }
-  ''Tree)
+$(deriveFromJSON
+  defaultOptions {
+     fieldLabelModifier = \n -> fromMaybe n (stripPrefix "node_" n) }
+ ''Node)
 
-getTree :: Invoker inv => inv -> IO Tree
+getTree :: Invoker inv => inv -> IO Node
 getTree inv = do
   (Response _ json) <- invoke inv (Request GetTree mempty)
   case eitherDecode json of
     Left err -> fail err
     Right tree -> pure tree
+
+flatten :: Node -> [Node]
+flatten root =
+  root :
+  concatMap flatten (node_nodes root) <>
+  concatMap flatten (node_floating_nodes root)
+
+leaves :: Node -> [Node]
+leaves = filter isLeaf . flatten
+  where isLeaf = isJust . node_window
+
+workspaces :: Node -> [Node]
+workspaces = filter isWorkspace . flatten
+  where isWorkspace = (== Workspace) . node_type
