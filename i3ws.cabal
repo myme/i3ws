@@ -22,7 +22,6 @@ library
                      , I3.Workspaces
   other-modules:       I3.Internal
                      , I3.Tree
-                     , I3.Utils
   build-depends:       base
                      , aeson
                      , binary
