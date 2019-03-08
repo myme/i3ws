@@ -66,23 +66,26 @@ class Invoker handle where
   invoke :: handle -> Request -> IO Response
   subscribe :: handle -> [EventT] -> EventHandler -> IO ()
 
+invoke' :: Bool -> Socket -> Request -> IO Response
+invoke' doTrace sock req = do
+  let trace x = when doTrace (print x)
+  trace req
+  send sock req
+  res <- recv sock
+  trace res
+  pure res
+
 subscribe' :: [EventT] -> Request
 subscribe' events = Request ReqSubscribe eventsJson
   where eventsJson = encode $ map (map toLower . show) events
 
 instance Invoker I3 where
-  invoke i3 req = do
-    let sock = i3CmdSocket i3
-        trace x = when (i3Trace i3) (print x)
-    trace req
-    send sock req
-    res <- recv sock
-    trace res
-    pure res
+  invoke i3 = invoke' (i3Trace i3) (i3CmdSocket i3)
   subscribe i3 events handler = do
     let socketPath = i3SocketPath i3
+        trace = i3Trace i3
     bracket (connect socketPath) close $ \sock -> do
-      (Response _ payload) <- invoke i3 (subscribe' events)
+      (Response _ payload) <- invoke' trace sock (subscribe' events)
       let success = fromMaybe False (decode payload >>= Map.lookup successKey)
       unless success $ fail "Event subscription failed!"
       forever (recvEvent sock >>= handler)
