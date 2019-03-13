@@ -13,24 +13,46 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-library
-  hs-source-dirs:      src
+library i3
+  hs-source-dirs:      src/i3
   default-language:    Haskell2010
   ghc-options:         -Wall
   exposed-modules:     I3
                      , I3.IPC
+                     , I3.Tree
                      , I3.Workspaces
-                     , I3WS
-                     , I3WS.Workspaces
-                     , FontAwesome.Icons
   other-modules:       I3.Command
                      , I3.Internal
-                     , I3.Tree
   build-depends:       base
                      , aeson
                      , binary
                      , bytestring
                      , containers
+                     , network
+                     , process
+                     , text
+                     , utf8-string
+
+library fa
+  hs-source-dirs:      src/fa
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  exposed-modules:     FontAwesome.Icons
+  build-depends:       base
+
+library
+  hs-source-dirs:      src/i3ws
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  exposed-modules:     I3WS
+                     , I3WS.Workspaces
+  build-depends:       base
+                     , aeson
+                     , binary
+                     , bytestring
+                     , containers
+                     , fa
+                     , i3
                      , network
                      , process
                      , text
@@ -42,6 +64,7 @@ executable i3ws-app
   default-language:    Haskell2010
   ghc-options:         -Wall
   build-depends:       base >= 4.7 && < 5
+                     , i3
                      , i3ws
 
 test-suite i3ws-test
@@ -55,6 +78,7 @@ test-suite i3ws-test
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
+                     , i3
                      , i3ws
                      , hspec
                      , QuickCheck
