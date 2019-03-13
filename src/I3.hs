@@ -7,8 +7,7 @@ module I3
   , getWorkspaces
   ) where
 
-import Control.Monad (void)
-import Data.ByteString.Lazy.Char8 (pack)
+import I3.Command (command)
 import I3.IPC hiding (ResponseT(Tree))
 import I3.Internal (I3(..), i3CmdSocket, i3SocketPath, I3)
 import I3.Tree (getTree)
@@ -22,6 +21,3 @@ initI3 = do
             , i3CmdSocket = cmdSock
             , i3Trace = False
             }
-
-command :: Invoker inv => inv -> String -> IO ()
-command inv cmd = void $ invoke inv (Request RunCommand (pack cmd))

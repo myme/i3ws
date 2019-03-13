@@ -23,7 +23,8 @@ library
                      , I3WS
                      , I3WS.Workspaces
                      , FontAwesome.Icons
-  other-modules:       I3.Internal
+  other-modules:       I3.Command
+                     , I3.Internal
                      , I3.Tree
   build-depends:       base
                      , aeson
