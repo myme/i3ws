@@ -20,6 +20,8 @@ library
   exposed-modules:     I3
                      , I3.IPC
                      , I3.Workspaces
+                     , I3WS
+                     , FontAwesome.Icons
   other-modules:       I3.Internal
                      , I3.Tree
   build-depends:       base

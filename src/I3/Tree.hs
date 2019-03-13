@@ -68,6 +68,8 @@ leaves :: Node -> [Node]
 leaves = filter isLeaf . flatten
   where isLeaf = isJust . node_window
 
+-- TODO: Use getWorkspaces from Workspaces to determine active/visible
+-- workspaces, ignoring the dock area, etc.
 workspaces :: Node -> [Node]
 workspaces = filter isWorkspace . flatten
   where isWorkspace = (== Workspace) . node_type
