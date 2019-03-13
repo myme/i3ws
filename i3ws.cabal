@@ -21,6 +21,7 @@ library
                      , I3.IPC
                      , I3.Workspaces
                      , I3WS
+                     , I3WS.Workspaces
                      , FontAwesome.Icons
   other-modules:       I3.Internal
                      , I3.Tree
@@ -48,8 +49,8 @@ test-suite i3ws-test
   main-is:             Main.hs
   default-language:    Haskell2010
   ghc-options:         -Wall
-  other-modules:       Test.I3.Mock
-                     , Test.I3.Workspaces
+  other-modules:       Test.I3WS.Mock
+                     , Test.I3WS.Workspaces
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring

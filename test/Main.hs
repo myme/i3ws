@@ -1,7 +1,7 @@
 module Main where
 
 import           Test.Hspec
-import qualified Test.I3.Workspaces as Workspaces
+import qualified Test.I3WS.Workspaces as Workspaces
 
 main :: IO ()
 main = hspec $ do

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.I3.Mock where
+module Test.I3WS.Mock where
 
 import           Data.Aeson (decode, encode)
 import           Data.ByteString.Lazy.Char8 (ByteString, split)
@@ -10,6 +10,7 @@ import           Data.List
 import qualified I3.IPC as IPC
 import           I3.IPC hiding (Workspace)
 import           I3.Workspaces
+import           I3WS.Workspaces
 
 data MockI3 = MockI3
   { mockHandler :: Request -> IO Response
@@ -38,7 +39,7 @@ type Workspaces = [Workspace]
 
 sortWs :: Workspaces -> Workspaces
 sortWs = sortBy (cmp `on` parseName . name)
-  where cmp (Nothing, a) (Nothing, b) = compare a b
+  where cmp (Nothing, _) (Nothing, _) = LT
         cmp (Nothing, _) (Just _, _)  = GT
         cmp (Just _, _)  (Nothing, _) = LT
         cmp a b = compare a b

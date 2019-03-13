@@ -1,10 +1,11 @@
-module Test.I3.Workspaces where
+module Test.I3WS.Workspaces where
 
-import Data.Foldable (traverse_)
+import Data.Foldable
 import I3.Workspaces
+import I3WS.Workspaces
 import Test.Hspec
-import Test.I3.Mock
-import Test.QuickCheck hiding (output)
+import Test.I3WS.Mock
+import Test.QuickCheck
 
 newtype Alpha = Alpha { getAlpha :: String } deriving Show
 
@@ -13,14 +14,17 @@ instance Arbitrary Alpha where
 
 tests :: Spec
 tests =
-  describe "I3.Workspaces" $ do
+  describe "I3WS.Workspaces" $ do
+
     describe "getWorkspaces" $
       it "get empty list of workspaces" $ do
         mock <- defaultMock
         ws <- getWorkspaces mock
         ws `shouldBe` []
 
-    let createWorkspaces mock = traverse_ (createWorkspace mock)
+    let createWorkspaces mock wss = do
+          traverse_ (createWorkspace mock) wss
+          assignNumbers mock
 
     describe "createWorkspace" $ do
       it "creates a new workspace with number" $ do

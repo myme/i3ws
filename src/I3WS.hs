@@ -8,6 +8,7 @@ import I3
 import I3.IPC
 import I3.Tree hiding (Workspace)
 import I3.Workspaces hiding (Workspace)
+import I3WS.Workspaces
 
 -- | Map window class to icons.
 appIcon :: String -> String
