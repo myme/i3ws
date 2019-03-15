@@ -22,6 +22,7 @@ appIcon app = case map toLower app of
   "gnome-control-center" -> icon "cog"
   "gnome-terminal"       -> icon "terminal"
   "nautilus"             -> icon "folder-open"
+  "qutebrowser"          -> icon "compass"
   "spotify"              -> icon "spotify"
   _                      -> icon "window-maximize"
   where icon i = maybe i pure (lookup i icons)
