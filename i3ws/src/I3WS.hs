@@ -13,19 +13,18 @@ import I3WS.Workspaces
 -- | Map window class to icons.
 appIcon :: String -> String
 appIcon app = case map toLower app of
-  "bitwarden"            -> icon "shield"
-  "chromium-browser"     -> icon "chrome"
+  "bitwarden"            -> icon Shield
+  "chromium-browser"     -> icon Chrome
   "cisco anyconnect secure mobility client"
-                         -> icon "lock"
-  "emacs"                -> icon "code"
-  "firefox"              -> icon "firefox"
-  "gnome-control-center" -> icon "cog"
-  "gnome-terminal"       -> icon "terminal"
-  "nautilus"             -> icon "folder-open"
-  "qutebrowser"          -> icon "compass"
-  "spotify"              -> icon "spotify"
-  _                      -> icon "window-maximize"
-  where icon i = maybe i pure (lookup i icons)
+                         -> icon Lock
+  "emacs"                -> icon Code
+  "firefox"              -> icon Firefox
+  "gnome-control-center" -> icon Cog
+  "gnome-terminal"       -> icon Terminal
+  "nautilus"             -> icon FolderOpen
+  "qutebrowser"          -> icon Compass
+  "spotify"              -> icon Spotify
+  _                      -> icon WindowMaximize
 
 -- | Find suitable icons for workspace applications.
 workspaceIcons :: Node -> String
