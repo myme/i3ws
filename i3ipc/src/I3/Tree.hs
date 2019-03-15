@@ -25,13 +25,21 @@ instance FromJSON NodeType where
     x              -> fail ("Invalid node type" <> unpack x)
   parseJSON x = typeMismatch "NodeTYpe" x
 
+instance ToJSON NodeType where
+  toJSON Root        = "root"
+  toJSON Output      = "output"
+  toJSON Con         = "con"
+  toJSON FloatingCon = "floating_con"
+  toJSON Workspace   = "workspace"
+  toJSON Dockarea    = "dockarea"
+
 data WindowProps = WindowProps
   { win_class :: String
   , win_instance :: String
   , win_title :: String
   } deriving (Eq, Show)
 
-$(deriveFromJSON
+$(deriveJSON
  defaultOptions {
      fieldLabelModifier = \n -> fromMaybe n (stripPrefix "win_" n) }
  ''WindowProps)
@@ -46,7 +54,7 @@ data Node = Node { node_id :: Int
                  }
   deriving (Eq, Show)
 
-$(deriveFromJSON
+$(deriveJSON
   defaultOptions {
      fieldLabelModifier = \n -> fromMaybe n (stripPrefix "node_" n) }
  ''Node)

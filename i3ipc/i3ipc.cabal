@@ -32,3 +32,17 @@ library
                      , process
                      , text
                      , utf8-string
+
+test-suite i3ipc-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             Main.hs
+  default-language:    Haskell2010
+  ghc-options:         -Wall
+  other-modules:       Test.I3
+  build-depends:       base >= 4.7 && < 5
+                     , aeson
+                     , bytestring
+                     , i3ipc
+                     , hspec
+                     , QuickCheck
