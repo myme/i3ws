@@ -16,8 +16,8 @@ renumber = zipWith newName (map show [1 :: Int ..])
           in if null label then i else i <> ":" <> label
 
 -- | Generate rename commands for swapping two workspaces.
-reorder :: Workspace -> Workspace -> [(String, String)]
-reorder l r = [(name r, tmp)
+swap :: Workspace -> Workspace -> [(String, String)]
+swap l r = [(name r, tmp)
               ,(name l, concatName rn lm)
               ,(tmp, concatName ln rm)
               ]
@@ -31,7 +31,7 @@ moveRight :: Invoker inv => inv -> IO ()
 moveRight inv = do
   ws <- getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
-  where reorder' (l, r) | focused l = reorder l r
+  where reorder' (l, r) | focused l = swap l r
                         | otherwise = []
 
 -- | Move current workspace one position to the left.
@@ -39,7 +39,7 @@ moveLeft :: Invoker inv => inv -> IO ()
 moveLeft inv = do
   ws <- getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
-  where reorder' (l, r) | focused r = reorder l r
+  where reorder' (l, r) | focused r = swap l r
                         | otherwise = []
 
 -- | Assigns sequential numbers to all workspaces.
