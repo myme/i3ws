@@ -21,10 +21,11 @@ arbitraryRoot = do
 
 arbitraryOutput :: Gen Node
 arbitraryOutput = do
-  id'   <- getId
-  name' <- arbitrary
-  nodes <- arbitraryContent
-  pure (Node id' (Just name') Output [nodes] [] Nothing Nothing)
+  id'     <- getId
+  name'   <- arbitrary
+  dock    <- scale (min 1) (listOf arbitraryDock)
+  content <- pure <$> arbitraryContent
+  pure (Node id' (Just name') Output (dock <> content) [] Nothing Nothing)
 
 arbitraryDock :: Gen Node
 arbitraryDock = do
@@ -41,18 +42,18 @@ arbitraryContent = do
 
 arbitraryWorkspaces :: Gen [Node]
 arbitraryWorkspaces = fmap (zipWith nameWorkspace [1 ..]) . listOf $ do
-  id'   <- getId
-  let name' = Nothing -- Named by nameWorkspace
+  id'      <- getId
   nodes    <- scale (min 3) $ listOf (arbitraryWindow False)
   floating <- scale (min 3) $ listOf (arbitraryWindow True)
+  let name' = Nothing -- Named by nameWorkspace
   pure (Node id' name' Workspace nodes floating Nothing Nothing)
   where nameWorkspace i w = w { node_name = Just (show (i :: Int)) }
 
 arbitraryWindow :: Bool -> Gen Node
 arbitraryWindow floating = do
-  id'   <- getId
-  name' <- arbitrary
-  let type' = if floating then FloatingCon else Con
-  win       <- Just . getPositive <$> arbitrary
+  id'       <- getId
+  name'     <- arbitrary
+  win       <- Just <$> getId
   win_props <- Just <$> liftA3 WindowProps arbitrary arbitrary arbitrary
+  let type' = if floating then FloatingCon else Con
   pure (Node id' (Just name') type' [] [] win win_props)
