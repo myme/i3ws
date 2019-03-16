@@ -56,8 +56,3 @@ autoRenameWorkspaces inv = do
   let handler = numberAndAnnotate inv
   handler
   subscribe inv [Window, Workspace] (const handler)
-
-run :: IO ()
-run = do
-  i3 <- initI3
-  autoRenameWorkspaces i3
