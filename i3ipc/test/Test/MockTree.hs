@@ -12,7 +12,11 @@ instance Arbitrary MockTree where
 getId :: Gen Int
 getId = getPositive <$> arbitrary
 
--- Root -> [Output] -> { Dock, Content -> [Workspace] -> [Window] }
+-- | Create arbitrary I3 mock tree structure, starting with the root node.
+-- |
+-- | The tree should be structured somewhat like the following:
+-- |
+-- | Root -> [Output] -> { Dock | Content -> [Workspace] -> [Window] }
 arbitraryRoot :: Gen Node
 arbitraryRoot = do
   id'   <- getId
