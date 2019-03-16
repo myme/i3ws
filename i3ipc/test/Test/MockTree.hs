@@ -12,6 +12,10 @@ instance Arbitrary MockTree where
 getId :: Gen Int
 getId = getPositive <$> arbitrary
 
+-- | Generator of lists of max @sz@ entries.
+listOfMax :: Int -> Gen a -> Gen [a]
+listOfMax sz = scale (min sz) . listOf
+
 -- | Create arbitrary I3 mock tree structure, starting with the root node.
 -- |
 -- | The tree should be structured somewhat like the following:
@@ -20,14 +24,14 @@ getId = getPositive <$> arbitrary
 arbitraryRoot :: Gen Node
 arbitraryRoot = do
   id'   <- getId
-  nodes <- scale (min 2) $ listOf arbitraryOutput
+  nodes <- listOfMax 2 arbitraryOutput
   pure (Node id' (Just "root") Root nodes [] Nothing Nothing)
 
 arbitraryOutput :: Gen Node
 arbitraryOutput = do
   id'     <- getId
   name'   <- arbitrary
-  dock    <- scale (min 1) (listOf arbitraryDock)
+  dock    <- listOfMax 1 arbitraryDock
   content <- pure <$> arbitraryContent
   pure (Node id' (Just name') Output (dock <> content) [] Nothing Nothing)
 
@@ -47,8 +51,8 @@ arbitraryContent = do
 arbitraryWorkspaces :: Gen [Node]
 arbitraryWorkspaces = fmap (zipWith nameWorkspace [1 ..]) . listOf $ do
   id'      <- getId
-  nodes    <- scale (min 3) $ listOf (arbitraryWindow False)
-  floating <- scale (min 3) $ listOf (arbitraryWindow True)
+  nodes    <- listOfMax 3 (arbitraryWindow False)
+  floating <- listOfMax 3 (arbitraryWindow True)
   let name' = Nothing -- Named by nameWorkspace
   pure (Node id' name' Workspace nodes floating Nothing Nothing)
   where nameWorkspace i w = w { node_name = Just (show (i :: Int)) }
