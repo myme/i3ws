@@ -31,7 +31,7 @@ library
                      , text
                      , utf8-string
 
-executable i3ws-app
+executable i3ws
   hs-source-dirs:      app
   main-is:             Main.hs
   default-language:    Haskell2010
