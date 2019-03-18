@@ -11,8 +11,8 @@ import Text.ParserCombinators.ReadP
 import Text.Read (readMaybe)
 
 renumber :: [String] -> [String]
-renumber = zipWith newName (map show [1 :: Int ..])
-  where newName i old =
+renumber = zipWith newName' (map show [1 :: Int ..])
+  where newName' i old =
           let (_, label) = parseName old
           in if null label then i else i <> ":" <> label
 
@@ -43,11 +43,16 @@ moveLeft inv = do
   where reorder' (l, r) | focused r = swap l r
                         | otherwise = []
 
-newWorkspace :: Invoker inv => inv -> IO ()
-newWorkspace inv = do
+moveNew :: Invoker inv => inv -> IO ()
+moveNew inv = newName inv >>= moveContainer inv
+
+newName :: Invoker inv => inv -> IO String
+newName inv = do
   let mklast = fmap Last . fst . parseName . name
-  newNum <- maybe 1 ((+1) . getLast) . foldMap mklast <$> getWorkspaces inv
-  createWorkspace inv (show newNum)
+  maybe "1" (show . (+1) . getLast) . foldMap mklast <$> getWorkspaces inv
+
+newWorkspace :: Invoker inv => inv -> IO ()
+newWorkspace inv = newName inv >>= createWorkspace inv
 
 -- | Assigns sequential numbers to all workspaces.
 assignNumbers :: Invoker inv => inv -> IO ()

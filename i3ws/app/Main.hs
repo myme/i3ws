@@ -17,5 +17,6 @@ main = do
     ["monitor"]       -> autoRenameWorkspaces i3
     ["move", "left"]  -> moveLeft i3
     ["move", "right"] -> moveRight i3
+    ["move", "new"]   -> moveNew i3
     ["new"]           -> newWorkspace i3
     _                 -> usage >> fail "Invalid arguments"

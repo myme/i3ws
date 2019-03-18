@@ -45,6 +45,11 @@ createWorkspace inv name' = do
   let cmd = fromString ("workspace \"" <> name' <> "\"")
   void $ invoke inv (Request RunCommand cmd)
 
+moveContainer :: Invoker inv => inv -> String -> IO ()
+moveContainer inv name' = do
+  let cmd = fromString ("move container to workspace \"" <> name' <> "\"")
+  void $ invoke inv (Request RunCommand cmd)
+
 rename :: Invoker inv => inv -> String -> String -> IO ()
 rename inv old new = do
   let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
