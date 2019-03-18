@@ -8,7 +8,15 @@ import I3WS.Workspaces
 import System.Environment
 
 usage :: IO ()
-usage = putStrLn "i3ws [ monitor | move <dir> | new ]"
+usage = do
+  putStrLn "usage: i3ws <action>"
+  putStrLn ""
+  putStrLn "actions:"
+  putStrLn ""
+  putStrLn "  monitor                  update workspace names on changes"
+  putStrLn "  move [left|right|new]    move/reorder workspace or container"
+  putStrLn "  new                      create a new workspace"
+  putStrLn ""
 
 main :: IO ()
 main = do
