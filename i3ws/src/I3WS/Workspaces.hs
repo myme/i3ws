@@ -4,6 +4,7 @@ module I3WS.Workspaces where
 
 import Control.Arrow ((>>>))
 import Data.Char (isDigit, isSpace)
+import Data.Semigroup hiding (option)
 import I3.IPC
 import I3.Workspaces
 import Text.ParserCombinators.ReadP
@@ -42,6 +43,12 @@ moveLeft inv = do
   where reorder' (l, r) | focused r = swap l r
                         | otherwise = []
 
+newWorkspace :: Invoker inv => inv -> IO ()
+newWorkspace inv = do
+  let mklast = fmap Last . fst . parseName . name
+  newNum <- maybe 1 ((+1) . getLast) . foldMap mklast <$> getWorkspaces inv
+  createWorkspace inv (show newNum)
+
 -- | Assigns sequential numbers to all workspaces.
 assignNumbers :: Invoker inv => inv -> IO ()
 assignNumbers inv = do
@@ -61,7 +68,7 @@ parseName = parse workspaceName >>> \case
   (Just res, _) -> res
   (Nothing, res) -> (Nothing, res)
   where workspaceName = do
-          num' <- option Nothing parseNumber
+          num'  <- option Nothing parseNumber
           label <- parseLabel <++ look
           eof
           pure (num', label)

@@ -8,7 +8,7 @@ import I3WS.Workspaces
 import System.Environment
 
 usage :: IO ()
-usage = putStrLn "i3ws [ monitor | move <dir> ]"
+usage = putStrLn "i3ws [ monitor | move <dir> | new ]"
 
 main :: IO ()
 main = do
@@ -17,4 +17,5 @@ main = do
     ["monitor"]       -> autoRenameWorkspaces i3
     ["move", "left"]  -> moveLeft i3
     ["move", "right"] -> moveRight i3
+    ["new"]           -> newWorkspace i3
     _                 -> usage >> fail "Invalid arguments"
