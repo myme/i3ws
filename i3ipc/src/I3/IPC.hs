@@ -62,9 +62,23 @@ data Event = Event EventT ByteString deriving Show
 
 type EventHandler = Event -> IO ()
 
-class Invoker handle where
-  invoke :: handle -> Request -> IO Response
-  subscribe :: handle -> [EventT] -> EventHandler -> IO ()
+data Invoker = Invoker
+  { invoke    :: Request -> IO Response
+  , subscribe :: [EventT] -> EventHandler -> IO ()
+  }
+
+i3Invoker :: I3 -> Invoker
+i3Invoker i3 = Invoker
+  { invoke = invoke' (i3Trace i3) (i3CmdSocket i3)
+  , subscribe = \events handler -> do
+      let socketPath = i3SocketPath i3
+          trace = i3Trace i3
+      bracket (connect socketPath) close $ \sock -> do
+        (Response _ payload) <- invoke' trace sock (subscribe' events)
+        let success = fromMaybe False (decode payload >>= Map.lookup ("success" :: String))
+        unless success $ fail "Event subscription failed!"
+        forever (recvEvent sock >>= handler)
+  }
 
 invoke' :: Bool -> Socket -> Request -> IO Response
 invoke' doTrace sock req = do
@@ -78,19 +92,6 @@ invoke' doTrace sock req = do
 subscribe' :: [EventT] -> Request
 subscribe' events = Request ReqSubscribe eventsJson
   where eventsJson = encode $ map (map toLower . show) events
-
-instance Invoker I3 where
-  invoke i3 = invoke' (i3Trace i3) (i3CmdSocket i3)
-  subscribe i3 events handler = do
-    let socketPath = i3SocketPath i3
-        trace = i3Trace i3
-    bracket (connect socketPath) close $ \sock -> do
-      (Response _ payload) <- invoke' trace sock (subscribe' events)
-      let success = fromMaybe False (decode payload >>= Map.lookup successKey)
-      unless success $ fail "Event subscription failed!"
-      forever (recvEvent sock >>= handler)
-    where successKey :: String
-          successKey = "success"
 
 getSocketPath :: IO FilePath
 getSocketPath =

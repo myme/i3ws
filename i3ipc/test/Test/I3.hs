@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Test.I3 where
@@ -10,12 +11,13 @@ import           Test.Hspec
 import           Test.MockTree
 import           Test.QuickCheck
 
-newtype Mock = StaticResponse B.ByteString
-
-instance Invoker Mock where
-  invoke (StaticResponse tree) (Request GetTree _) = pure (Response Tree tree)
-  invoke _ _ = undefined
-  subscribe = undefined
+static :: B.ByteString -> Invoker
+static res = Invoker
+  { invoke = \case
+      (Request GetTree _) -> pure (Response Tree res)
+      _                   -> undefined
+  , subscribe = undefined
+  }
 
 tests :: Spec
 tests = do
@@ -23,7 +25,7 @@ tests = do
     describe "getTree" $ do
       it "returns current tree" $
         property $ \(MockTree node) -> do
-          root <- getTree (StaticResponse (encode node))
+          root <- getTree (static (encode node))
           root `shouldBe` node
 
     describe "flatten" $ do

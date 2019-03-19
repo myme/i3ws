@@ -59,7 +59,7 @@ $(deriveJSON
      fieldLabelModifier = \n -> fromMaybe n (stripPrefix "node_" n) }
  ''Node)
 
-getTree :: Invoker inv => inv -> IO Node
+getTree :: Invoker -> IO Node
 getTree inv = do
   (Response _ json) <- invoke inv (Request GetTree mempty)
   case eitherDecode json of

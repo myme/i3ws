@@ -33,27 +33,27 @@ data Workspace = Workspace
 instance FromJSON Workspace
 instance ToJSON Workspace
 
-getWorkspaces :: Invoker inv => inv -> IO [Workspace]
+getWorkspaces :: Invoker -> IO [Workspace]
 getWorkspaces inv = do
   (Response _ payload) <- invoke inv (Request GetWorkspaces mempty)
   case decode payload of
     Nothing -> fail "Invalid workspace response"
     Just res -> pure res
 
-createWorkspace :: Invoker inv => inv -> String -> IO ()
+createWorkspace :: Invoker -> String -> IO ()
 createWorkspace inv name' = do
   let cmd = fromString ("workspace \"" <> name' <> "\"")
   void $ invoke inv (Request RunCommand cmd)
 
-moveContainer :: Invoker inv => inv -> String -> IO ()
+moveContainer :: Invoker -> String -> IO ()
 moveContainer inv name' = do
   let cmd = fromString ("move container to workspace \"" <> name' <> "\"")
   void $ invoke inv (Request RunCommand cmd)
 
-rename :: Invoker inv => inv -> String -> String -> IO ()
+rename :: Invoker -> String -> String -> IO ()
 rename inv old new = do
   let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
   when (old /= new) (void $ invoke inv (Request RunCommand cmd))
 
-renameAll :: Invoker inv => inv -> [(String, String)] -> IO ()
+renameAll :: Invoker -> [(String, String)] -> IO ()
 renameAll inv = traverse_ (uncurry $ rename inv)

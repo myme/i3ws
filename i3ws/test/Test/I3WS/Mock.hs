@@ -12,18 +12,6 @@ import           I3.IPC hiding (Workspace)
 import           I3.Workspaces
 import           I3WS.Workspaces
 
-data MockI3 = MockI3
-  { mockHandler :: Request -> IO Response
-  , mockGetLog :: IO [String]
-  }
-
-instance Invoker MockI3 where
-  invoke = mockHandler
-  subscribe = undefined
-
-getMockLog :: MockI3 -> IO [String]
-getMockLog = mockGetLog
-
 defaultWorkspace :: Workspace
 defaultWorkspace = Workspace
   { num = -1
@@ -45,7 +33,7 @@ sortWs = sortBy (cmp `on` parseName . name)
         cmp a b = compare a b
 
 -- | Create a I3 mock backend
-defaultMock :: IO MockI3
+defaultMock :: IO Invoker
 defaultMock = do
   workspaces <- newIORef mempty
   mockLog    <- newIORef mempty
@@ -63,7 +51,7 @@ defaultMock = do
         modifyIORef' mockLog (<> [show req])
         handler req
 
-  pure (MockI3 handlerWithLog (readIORef mockLog))
+  pure (Invoker handlerWithLog undefined)
 
 renameWorkspace :: IORef Workspaces -> ByteString -> ByteString -> IO Response
 renameWorkspace ref from to = case (,) <$> decode from <*> decode to of
@@ -78,7 +66,10 @@ switchWorkspace :: IORef Workspaces -> ByteString -> IO Response
 switchWorkspace ref n = case decode n of
   Nothing -> pure (Response Command "{\"success\":false}")
   Just name' -> do
-    let new = defaultWorkspace { name = name', focused = True }
-    let blur ws = ws { focused = False }
-    modifyIORef' ref (sortWs . (<> [new]) . map blur)
+    let new = defaultWorkspace { name = name' }
+        maybeAddNew wss = case find ((== name') . name) wss of
+          Nothing -> wss <> [new]
+          Just _  -> wss
+        setFocus ws = ws { focused = name ws == name' }
+    modifyIORef' ref (sortWs . map setFocus . maybeAddNew)
     pure (Response Command "")

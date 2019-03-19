@@ -35,12 +35,12 @@ workspaceIcons =
   unwords
 
 -- | Find active workspaces.
-activeWorkspaces :: Invoker inv => inv -> IO [Node]
+activeWorkspaces :: Invoker -> IO [Node]
 activeWorkspaces = fmap nonEmpty . getTree
   where nonEmpty = filter (not . null . leaves) . workspaces
 
 -- | Add number and annotations to workspaces.
-numberAndAnnotate :: Invoker inv => inv -> IO ()
+numberAndAnnotate :: Invoker -> IO ()
 numberAndAnnotate inv = do
   wss <- activeWorkspaces inv
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
@@ -51,7 +51,7 @@ numberAndAnnotate inv = do
           pure (name', workspaceIcons ws)
 
 -- | Rename workspaces automatically based on contained windows.
-autoRenameWorkspaces :: Invoker inv => inv -> IO ()
+autoRenameWorkspaces :: Invoker -> IO ()
 autoRenameWorkspaces inv = do
   let handler = numberAndAnnotate inv
   handler
