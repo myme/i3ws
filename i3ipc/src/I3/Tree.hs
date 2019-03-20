@@ -6,7 +6,7 @@ module I3.Tree where
 import Data.Aeson hiding (json)
 import Data.Aeson.TH
 import Data.Aeson.Types (typeMismatch)
-import Data.List (stripPrefix)
+import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (unpack)
 import I3.IPC hiding (ResponseT(Tree), Output, Workspace)
@@ -76,8 +76,7 @@ leaves :: Node -> [Node]
 leaves = filter isLeaf . flatten
   where isLeaf = isJust . node_window
 
--- TODO: Use getWorkspaces from Workspaces to determine active/visible
--- workspaces, ignoring the dock area, etc.
 workspaces :: Node -> [Node]
 workspaces = filter isWorkspace . flatten
-  where isWorkspace = (== Workspace) . node_type
+  where isWorkspace ws = node_type ws == Workspace && not (isPrivate ws)
+        isPrivate = maybe False (isPrefixOf "__") . node_name

@@ -34,15 +34,10 @@ workspaceIcons =
   map (appIcon . fromMaybe "") >>>
   unwords
 
--- | Find active workspaces.
-activeWorkspaces :: Invoker -> IO [Node]
-activeWorkspaces = fmap nonEmpty . getTree
-  where nonEmpty = filter (not . null . leaves) . workspaces
-
 -- | Add number and annotations to workspaces.
 numberAndAnnotate :: Invoker -> IO ()
 numberAndAnnotate inv = do
-  wss <- activeWorkspaces inv
+  wss <- workspaces <$> getTree inv
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
       renames = zip oldNames (renumber withIcons)
   renameAll inv renames
