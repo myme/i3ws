@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Test.I3WS.Mock where
 
 import           Data.Aeson (decode, encode)

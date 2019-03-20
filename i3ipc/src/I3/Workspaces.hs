@@ -1,6 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module I3.Workspaces where
 
 import Control.Monad (void, when)

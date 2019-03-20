@@ -8,8 +8,6 @@ stack script
   --package text
 -}
 
-{-# LANGUAGE OverloadedStrings #-}
-
 import           Control.Arrow
 import           Data.Char
 import qualified Data.Map.Strict as M

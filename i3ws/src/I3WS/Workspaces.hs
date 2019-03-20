@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module I3WS.Workspaces where
 
 import Control.Arrow ((>>>))

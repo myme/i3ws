@@ -11,6 +11,11 @@ extra-source-files:
 
 description: Please see the README on GitHub at <https://github.com/myme/i3ws#readme>
 
+default-extensions:
+  - DeriveGeneric
+  - LambdaCase
+  - OverloadedStrings
+
 library:
   source-dirs:         src/
   dependencies:
