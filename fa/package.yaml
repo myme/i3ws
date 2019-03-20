@@ -1,0 +1,19 @@
+name:                fa
+version:             0.1.0.0
+github:              "myme/i3ws"
+license:             BSD3
+author:              "Martin Myrseth"
+maintainer:          "@myme"
+copyright:           "2019 Martin Myrseth"
+
+extra-source-files:
+  - README.md
+
+description: Please see the README on GitHub at <https://github.com/myme/i3ws#readme>
+
+library:
+  source-dirs:         src/
+  dependencies:
+    - base >= 4.7 && < 5
+  ghc-options:
+    - -Wall
