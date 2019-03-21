@@ -42,15 +42,14 @@ data EventT = Workspace
             | ETick
             deriving (Bounded, Enum, Show)
 
-data Request    = Request PackageType ByteString deriving Show
-data Response a = Response PackageType (Either String a) deriving Show
-data Event = Event EventT ByteString deriving Show
-
-type EventHandler = Event -> IO ()
+data Request        = Request PackageType ByteString deriving Show
+data Response     a = Response PackageType (Either String a) deriving Show
+data Event        a = Event EventT (Either String a) deriving Show
+type EventHandler a = (EventT, a) -> IO (Either String ())
 
 data Invoker = Invoker
   { getInvoker    :: forall a. FromJSON a => Request -> IO (Response a)
-  , getSubscriber :: [EventT] -> EventHandler -> IO ()
+  , getSubscriber :: forall a. FromJSON a => [EventT] -> EventHandler a -> IO (Either String ())
   }
 
 i3Invoker :: I3 -> Invoker
@@ -68,20 +67,28 @@ invoke inv req = do
     then pure response
     else pure (Left "Mismatching request/response types")
 
-subscribe :: Invoker -> [EventT] -> EventHandler -> IO ()
+subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO (Either String ())
 subscribe = getSubscriber
 
 invoke' :: FromJSON a => Socket -> Request -> IO (Response a)
 invoke' sock req = send sock req >> recv sock
 
-subscribe' :: FilePath -> [EventT] -> (Event -> IO ()) -> IO a
+subscribe' :: FromJSON a => FilePath -> [EventT] -> EventHandler a -> IO (Either String ())
 subscribe' socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
         eventsJson = encode $ map (map toLower . show) events
     (Response _ res) <- invoke' sock req
-    either fail pure (res >>= checkSuccess)
-    forever (recvEvent sock >>= handler)
+    case res >>= checkSuccess of
+      Left err -> pure (Left err)
+      Right () -> handleEvents sock
+
+  where handleEvents :: Socket -> IO (Either String ())
+        handleEvents sock = do
+          (Event type' payload) <- recvEvent sock
+          case payload of
+            Left err -> pure (Left err)
+            Right  x -> handler (type', x) >> handleEvents sock
 
 checkSuccess :: Value -> Either String ()
 checkSuccess = join . parseEither parseResponse
@@ -154,8 +161,8 @@ recv sock = do
   resType <- either (\_ -> fail "Unexpected Event") pure type'
   pure (Response resType (eitherDecode payload))
 
-recvEvent :: Socket -> IO Event
+recvEvent :: FromJSON a => Socket -> IO (Event a)
 recvEvent sock = do
   (type', payload) <- recvPacket sock
   evType <- either pure (\_ -> fail "Expecting Event") type'
-  pure (Event evType payload)
+  pure (Event evType (eitherDecode payload))

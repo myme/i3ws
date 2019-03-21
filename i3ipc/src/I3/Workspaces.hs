@@ -2,7 +2,6 @@ module I3.Workspaces where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.ByteString.Lazy.UTF8 (fromString)
-import Data.Foldable
 import GHC.Generics
 import I3.IPC
 
@@ -49,5 +48,5 @@ rename inv old new = do
     then pure (Right ())
     else invoke inv (Request Command cmd)
 
-renameAll :: Invoker -> [(String, String)] -> IO ()
-renameAll inv = traverse_ (uncurry $ rename inv)
+renameAll :: Invoker -> [(String, String)] -> IO (Either String ())
+renameAll inv = fmap sequence_ <$> traverse (uncurry $ rename inv)

@@ -28,16 +28,18 @@ swap l r = [(name r, tmp)
 -- | Move current workspace one position to the right.
 moveRight :: Invoker -> IO ()
 moveRight inv = do
-  ws <- either fail id <$> getWorkspaces inv
-  renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
+  wss <- either fail id <$> getWorkspaces inv
+  res <- renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
+  either fail pure res
   where reorder' (l, r) | focused l = swap l r
                         | otherwise = []
 
 -- | Move current workspace one position to the left.
 moveLeft :: Invoker -> IO ()
 moveLeft inv = do
-  ws <- either fail id <$> getWorkspaces inv
-  renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
+  wss <- either fail id <$> getWorkspaces inv
+  res <- renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
+  either fail pure res
   where reorder' (l, r) | focused r = swap l r
                         | otherwise = []
 
@@ -55,8 +57,9 @@ newWorkspace :: Invoker -> IO ()
 -- | Assigns sequential numbers to all workspaces.
 assignNumbers :: Invoker -> IO ()
 assignNumbers inv = do
-  workspaces <- either fail (map name) <$> getWorkspaces inv
-  renameAll inv (zip workspaces (renumber workspaces))
+  wss <- either fail (map name) <$> getWorkspaces inv
+  res <- renameAll inv (zip wss (renumber wss))
+  either fail pure res
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)
 parse parser input = case readP_to_S parser input of
