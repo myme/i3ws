@@ -37,7 +37,7 @@ workspaceIcons =
 -- | Add number and annotations to workspaces.
 numberAndAnnotate :: Invoker -> IO ()
 numberAndAnnotate inv = do
-  wss <- workspaces <$> getTree inv
+  wss <- either fail workspaces <$> getTree inv
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
       renames = zip oldNames (renumber withIcons)
   renameAll inv renames

@@ -1,6 +1,6 @@
 module Test.I3WS.Mock where
 
-import           Data.Aeson (decode, encode)
+import           Data.Aeson (FromJSON, decode, eitherDecode, encode)
 import           Data.ByteString.Lazy.Char8 (ByteString, split)
 import           Data.Function
 import           Data.IORef
@@ -36,10 +36,11 @@ defaultMock = do
   workspaces <- newIORef mempty
   mockLog    <- newIORef mempty
 
-  let handler (Request GetWorkspaces _) = do
+  let handler :: FromJSON a => Request -> IO (Response a)
+      handler (Request Workspaces _) = do
         ws <- readIORef workspaces
-        pure (Response IPC.Workspaces (encode ws))
-      handler (Request RunCommand cmd) = case split ' ' cmd of
+        pure (Response IPC.Workspaces (eitherDecode (encode ws)))
+      handler (Request Command cmd) = case split ' ' cmd of
         ["workspace", n] -> switchWorkspace workspaces n
         ["rename", "workspace", from, "to", to] -> renameWorkspace workspaces from to
         xs -> print ("Unknown command: " : xs) >> undefined
@@ -51,18 +52,18 @@ defaultMock = do
 
   pure (Invoker handlerWithLog undefined)
 
-renameWorkspace :: IORef Workspaces -> ByteString -> ByteString -> IO Response
+renameWorkspace :: FromJSON a => IORef Workspaces -> ByteString -> ByteString -> IO (Response a)
 renameWorkspace ref from to = case (,) <$> decode from <*> decode to of
-  Nothing -> pure (Response Command "{\"success\":false}")
+  Nothing -> pure (Response Command (eitherDecode "{\"success\":false}"))
   Just (f, t) -> do
     let rename' ws | name ws == f = ws { name = t }
                    | otherwise = ws
     modifyIORef' ref (sortWs . map rename')
-    pure (Response Command "")
+    pure (Response Command (eitherDecode ""))
 
-switchWorkspace :: IORef Workspaces -> ByteString -> IO Response
+switchWorkspace :: FromJSON a => IORef Workspaces -> ByteString -> IO (Response a)
 switchWorkspace ref n = case decode n of
-  Nothing -> pure (Response Command "{\"success\":false}")
+  Nothing -> pure (Response Command (eitherDecode "{\"success\":false}"))
   Just name' -> do
     let new = defaultWorkspace { name = name' }
         maybeAddNew wss = case find ((== name') . name) wss of
@@ -70,4 +71,4 @@ switchWorkspace ref n = case decode n of
           Just _  -> wss
         setFocus ws = ws { focused = name ws == name' }
     modifyIORef' ref (sortWs . map setFocus . maybeAddNew)
-    pure (Response Command "")
+    pure (Response Command (eitherDecode ""))

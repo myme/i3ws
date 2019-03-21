@@ -8,7 +8,7 @@ module I3
   ) where
 
 import I3.Command (command)
-import I3.IPC hiding (ResponseT(Tree))
+import I3.IPC
 import I3.Internal (i3CmdSocket, i3SocketPath, I3(..))
 import I3.Tree (getTree)
 import I3.Workspaces (getWorkspaces)

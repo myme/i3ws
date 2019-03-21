@@ -28,7 +28,7 @@ swap l r = [(name r, tmp)
 -- | Move current workspace one position to the right.
 moveRight :: Invoker -> IO ()
 moveRight inv = do
-  ws <- getWorkspaces inv
+  ws <- either fail id <$> getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
   where reorder' (l, r) | focused l = swap l r
                         | otherwise = []
@@ -36,26 +36,26 @@ moveRight inv = do
 -- | Move current workspace one position to the left.
 moveLeft :: Invoker -> IO ()
 moveLeft inv = do
-  ws <- getWorkspaces inv
+  ws <- either fail id <$> getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip ws (drop 1 ws))
   where reorder' (l, r) | focused r = swap l r
                         | otherwise = []
 
 moveNew :: Invoker -> IO ()
-moveNew inv = newName inv >>= moveContainer inv
+moveNew inv = newName inv >>= moveContainer inv >>= either fail pure
 
 newName :: Invoker -> IO String
 newName inv = do
   let mklast = fmap Last . fst . parseName . name
-  maybe "1" (show . (+1) . getLast) . foldMap mklast <$> getWorkspaces inv
+  maybe "1" (show . (+1) . getLast) . foldMap mklast . either fail id <$> getWorkspaces inv
 
-newWorkspace inv = newName inv >>= createWorkspace inv
+newWorkspace inv = newName inv >>= createWorkspace inv >>= either fail pure
 newWorkspace :: Invoker -> IO ()
 
 -- | Assigns sequential numbers to all workspaces.
 assignNumbers :: Invoker -> IO ()
 assignNumbers inv = do
-  workspaces <- map name <$> getWorkspaces inv
+  workspaces <- either fail (map name) <$> getWorkspaces inv
   renameAll inv (zip workspaces (renumber workspaces))
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)

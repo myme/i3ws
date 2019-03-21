@@ -1,7 +1,6 @@
 module I3.Workspaces where
 
-import Control.Monad (void, when)
-import Data.Aeson (FromJSON, ToJSON, decode)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.ByteString.Lazy.UTF8 (fromString)
 import Data.Foldable
 import GHC.Generics
@@ -30,27 +29,25 @@ data Workspace = Workspace
 instance FromJSON Workspace
 instance ToJSON Workspace
 
-getWorkspaces :: Invoker -> IO [Workspace]
-getWorkspaces inv = do
-  (Response _ payload) <- invoke inv (Request GetWorkspaces mempty)
-  case decode payload of
-    Nothing -> fail "Invalid workspace response"
-    Just res -> pure res
+getWorkspaces :: Invoker -> IO (Either String [Workspace])
+getWorkspaces inv = invoke inv (Request Workspaces mempty)
 
-createWorkspace :: Invoker -> String -> IO ()
+createWorkspace :: Invoker -> String -> IO (Either String ())
 createWorkspace inv name' = do
   let cmd = fromString ("workspace \"" <> name' <> "\"")
-  void $ invoke inv (Request RunCommand cmd)
+  invoke inv (Request Command cmd)
 
-moveContainer :: Invoker -> String -> IO ()
+moveContainer :: Invoker -> String -> IO (Either String ())
 moveContainer inv name' = do
   let cmd = fromString ("move container to workspace \"" <> name' <> "\"")
-  void $ invoke inv (Request RunCommand cmd)
+  invoke inv (Request Command cmd)
 
-rename :: Invoker -> String -> String -> IO ()
+rename :: Invoker -> String -> String -> IO (Either String ())
 rename inv old new = do
   let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
-  when (old /= new) (void $ invoke inv (Request RunCommand cmd))
+  if old == new
+    then pure (Right ())
+    else invoke inv (Request Command cmd)
 
 renameAll :: Invoker -> [(String, String)] -> IO ()
 renameAll inv = traverse_ (uncurry $ rename inv)

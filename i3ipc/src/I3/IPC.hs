@@ -1,48 +1,36 @@
+{-# LANGUAGE RankNTypes #-}
+
 module I3.IPC where
 
 import           Control.Exception (bracket)
-import           Control.Monad (void, forever, unless, when)
-import           Data.Aeson (decode, encode)
+import           Control.Monad
+import           Data.Aeson (FromJSON, (.:), eitherDecode, encode, withObject)
+import           Data.Aeson.Types
 import           Data.Binary.Get
 import           Data.Binary.Put
 import           Data.Bits
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as B8
 import           Data.Char
-import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
 import           I3.Internal
 import           Network.Socket (Socket)
 import qualified Network.Socket as Net
 import qualified Network.Socket.ByteString.Lazy as NS
 import           System.Process (readProcess)
 
-data RequestT = RunCommand
-              | GetWorkspaces
-              | ReqSubscribe
-              | GetOutputs
-              | GetTree
-              | GetMarks
-              | GetBarConfig
-              | GetVersion
-              | GetBindingModes
-              | GetConfig
-              | SendTick
-              | Sync
-              deriving (Bounded, Enum, Show)
-
-data ResponseT = Command
-               | Workspaces
-               | ResSubscribe
-               | Outputs
-               | Tree
-               | Marks
-               | BarConfig
-               | Version
-               | BindingModes
-               | Config
-               | Tick
-               deriving (Bounded, Enum, Show)
+data PackageType = Command
+                 | Workspaces
+                 | Subscribe
+                 | Outputs
+                 | Tree
+                 | Marks
+                 | BarConfig
+                 | Version
+                 | BindingModes
+                 | Config
+                 | Tick
+                 | Sync
+                 deriving (Bounded, Enum, Eq, Show)
 
 data EventT = Workspace
             | Output
@@ -54,42 +42,54 @@ data EventT = Workspace
             | ETick
             deriving (Bounded, Enum, Show)
 
-data Request = Request RequestT ByteString deriving Show
-data Response = Response ResponseT ByteString deriving Show
+data Request    = Request PackageType ByteString deriving Show
+data Response a = Response PackageType (Either String a) deriving Show
 data Event = Event EventT ByteString deriving Show
 
 type EventHandler = Event -> IO ()
 
 data Invoker = Invoker
-  { invoke    :: Request -> IO Response
-  , subscribe :: [EventT] -> EventHandler -> IO ()
+  { getInvoker    :: forall a. FromJSON a => Request -> IO (Response a)
+  , getSubscriber :: [EventT] -> EventHandler -> IO ()
   }
 
 i3Invoker :: I3 -> Invoker
 i3Invoker i3 = Invoker
-  { invoke = invoke' (i3Trace i3) (i3CmdSocket i3)
-  , subscribe = \events handler -> do
-      let socketPath = i3SocketPath i3
-          trace = i3Trace i3
-      bracket (connect socketPath) close $ \sock -> do
-        (Response _ payload) <- invoke' trace sock (subscribe' events)
-        let success = fromMaybe False (decode payload >>= Map.lookup ("success" :: String))
-        unless success $ fail "Event subscription failed!"
-        forever (recvEvent sock >>= handler)
+  { getInvoker = invoke' (i3CmdSocket i3)
+  , getSubscriber = subscribe' (i3SocketPath i3)
   }
 
-invoke' :: Bool -> Socket -> Request -> IO Response
-invoke' doTrace sock req = do
-  let trace x = when doTrace (print x)
-  trace req
-  send sock req
-  res <- recv sock
-  trace res
-  pure res
+invoke :: FromJSON a => Invoker -> Request -> IO (Either String a)
+invoke inv req = do
+  res <- getInvoker inv req
+  let (Request  reqT _) = req
+      (Response resT response) = res
+  if reqT == resT
+    then pure response
+    else pure (Left "Mismatching request/response types")
 
-subscribe' :: [EventT] -> Request
-subscribe' events = Request ReqSubscribe eventsJson
-  where eventsJson = encode $ map (map toLower . show) events
+subscribe :: Invoker -> [EventT] -> EventHandler -> IO ()
+subscribe = getSubscriber
+
+invoke' :: FromJSON a => Socket -> Request -> IO (Response a)
+invoke' sock req = send sock req >> recv sock
+
+subscribe' :: FilePath -> [EventT] -> (Event -> IO ()) -> IO a
+subscribe' socketPath events handler =
+  bracket (connect socketPath) close $ \sock -> do
+    let req = Request Subscribe eventsJson
+        eventsJson = encode $ map (map toLower . show) events
+    (Response _ res) <- invoke' sock req
+    either fail pure (res >>= checkSuccess)
+    forever (recvEvent sock >>= handler)
+
+checkSuccess :: Value -> Either String ()
+checkSuccess = join . parseEither parseResponse
+  where parseResponse = withObject "response" $ \obj -> do
+          success <- obj .: "success"
+          if not success
+            then Left <$> (obj .: "error")
+            else pure (Right ())
 
 getSocketPath :: IO FilePath
 getSocketPath =
@@ -126,7 +126,7 @@ send sock req = do
   let package = encodeMsg req
   void $ NS.send sock package
 
-decodeHeader :: ByteString -> (Either EventT ResponseT, Int)
+decodeHeader :: ByteString -> (Either EventT PackageType, Int)
 decodeHeader = runGet getHeader where
   getType t = case safeToEnum (fromIntegral t) of
     Nothing -> fail ("Invalid message type: " <> show t)
@@ -141,18 +141,18 @@ decodeHeader = runGet getHeader where
       else Right <$> getType t
     pure (type', fromIntegral len)
 
-recvPacket :: Socket -> IO (Either EventT ResponseT, ByteString)
+recvPacket :: Socket -> IO (Either EventT PackageType, ByteString)
 recvPacket sock = do
   let headerLength = B8.length magic + 4 + 4 -- Magic + 2x 32 bit ints
   (type', payloadLength) <- decodeHeader <$> NS.recv sock (fromIntegral headerLength)
   payload <- NS.recv sock (fromIntegral payloadLength)
   pure (type', payload)
 
-recv :: Socket -> IO Response
+recv :: FromJSON a => Socket -> IO (Response a)
 recv sock = do
   (type', payload) <- recvPacket sock
   resType <- either (\_ -> fail "Unexpected Event") pure type'
-  pure (Response resType payload)
+  pure (Response resType (eitherDecode payload))
 
 recvEvent :: Socket -> IO Event
 recvEvent sock = do

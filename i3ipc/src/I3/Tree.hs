@@ -8,7 +8,7 @@ import Data.Aeson.Types (typeMismatch)
 import Data.List (isPrefixOf, stripPrefix)
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (unpack)
-import I3.IPC hiding (ResponseT(Tree), Output, Workspace)
+import I3.IPC hiding (Output, Workspace)
 
 data NodeType = Root | Output | Con | FloatingCon | Workspace | Dockarea
               deriving (Eq, Show)
@@ -58,12 +58,8 @@ $(deriveJSON
      fieldLabelModifier = \n -> fromMaybe n (stripPrefix "node_" n) }
  ''Node)
 
-getTree :: Invoker -> IO Node
-getTree inv = do
-  (Response _ json) <- invoke inv (Request GetTree mempty)
-  case eitherDecode json of
-    Left err -> fail err
-    Right tree -> pure tree
+getTree :: Invoker -> IO (Either String Node)
+getTree inv = invoke inv (Request Tree mempty)
 
 flatten :: Node -> [Node]
 flatten root =

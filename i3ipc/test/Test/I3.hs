@@ -1,19 +1,18 @@
 module Test.I3 where
 
-import           Data.Aeson (encode)
-import qualified Data.ByteString.Lazy as B
-import           I3.IPC hiding (Output, Workspace)
-import           I3.Tree
-import           Test.Hspec
-import           Test.MockTree
-import           Test.QuickCheck
+import Data.Aeson (ToJSON, eitherDecode, encode)
+import I3.IPC hiding (Output, Workspace)
+import I3.Tree
+import Test.Hspec
+import Test.MockTree
+import Test.QuickCheck
 
-static :: B.ByteString -> Invoker
+static :: ToJSON a => a -> Invoker
 static res = Invoker
-  { invoke = \case
-      (Request GetTree _) -> pure (Response Tree res)
-      _                   -> undefined
-  , subscribe = undefined
+  { getInvoker = \case
+      (Request Tree _) -> pure (Response Tree (eitherDecode (encode res)))
+      _                -> undefined
+  , getSubscriber = undefined
   }
 
 tests :: Spec
@@ -22,8 +21,8 @@ tests = do
     describe "getTree" $ do
       it "returns current tree" $
         property $ \(MockTree node) -> do
-          root <- getTree (static (encode node))
-          root `shouldBe` node
+          root <- getTree (static node)
+          root `shouldBe` Right node
 
     describe "flatten" $ do
       it "always returns root as first element" $ do
