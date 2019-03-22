@@ -58,7 +58,7 @@ $(deriveJSON
      fieldLabelModifier = \n -> fromMaybe n (stripPrefix "node_" n) }
  ''Node)
 
-getTree :: Invoker -> IO (Either String Node)
+getTree :: Invoker -> IO Node
 getTree inv = invoke inv (Request Tree mempty)
 
 flatten :: Node -> [Node]

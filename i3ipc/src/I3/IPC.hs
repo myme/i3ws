@@ -2,7 +2,7 @@
 
 module I3.IPC where
 
-import           Control.Exception (bracket)
+import           Control.Exception
 import           Control.Monad
 import           Data.Aeson (FromJSON, (.:), eitherDecode, encode, withObject)
 import           Data.Aeson.Types
@@ -45,11 +45,15 @@ data EventT = Workspace
 data Request        = Request PackageType ByteString deriving Show
 data Response     a = Response PackageType (Either String a) deriving Show
 data Event        a = Event EventT (Either String a) deriving Show
-type EventHandler a = (EventT, a) -> IO (Either String ())
+type EventHandler a = (EventT, a) -> IO ()
+
+newtype I3Error = CommandFailed String deriving (Eq, Show)
+
+instance Exception I3Error
 
 data Invoker = Invoker
   { getInvoker    :: forall a. FromJSON a => Request -> IO (Response a)
-  , getSubscriber :: forall a. FromJSON a => [EventT] -> EventHandler a -> IO (Either String ())
+  , getSubscriber :: forall a. FromJSON a => [EventT] -> EventHandler a -> IO ()
   }
 
 i3Invoker :: I3 -> Invoker
@@ -58,36 +62,34 @@ i3Invoker i3 = Invoker
   , getSubscriber = subscribe' (i3SocketPath i3)
   }
 
-invoke :: FromJSON a => Invoker -> Request -> IO (Either String a)
+invoke :: FromJSON a => Invoker -> Request -> IO a
 invoke inv req = do
   res <- getInvoker inv req
   let (Request  reqT _) = req
       (Response resT response) = res
-  if reqT == resT
-    then pure response
-    else pure (Left "Mismatching request/response types")
+  when (reqT /= resT) $
+    throwIO (CommandFailed "Mismatching request/response types")
+  either (throwIO . CommandFailed) pure response
 
-subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO (Either String ())
+subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO ()
 subscribe = getSubscriber
 
 invoke' :: FromJSON a => Socket -> Request -> IO (Response a)
 invoke' sock req = send sock req >> recv sock
 
-subscribe' :: FromJSON a => FilePath -> [EventT] -> EventHandler a -> IO (Either String ())
+subscribe' :: FromJSON a => FilePath -> [EventT] -> EventHandler a -> IO ()
 subscribe' socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
         eventsJson = encode $ map (map toLower . show) events
     (Response _ res) <- invoke' sock req
     case res >>= checkSuccess of
-      Left err -> pure (Left err)
+      Left err -> throwIO (CommandFailed err)
       Right () -> handleEvents sock
-
-  where handleEvents :: Socket -> IO (Either String ())
-        handleEvents sock = do
+  where handleEvents sock = do
           (Event type' payload) <- recvEvent sock
           case payload of
-            Left err -> pure (Left err)
+            Left err -> throwIO (CommandFailed err)
             Right  x -> handler (type', x) >> handleEvents sock
 
 checkSuccess :: Value -> Either String ()

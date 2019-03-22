@@ -20,7 +20,7 @@ tests =
       it "get empty list of workspaces" $ do
         mock <- defaultMock
         ws <- getWorkspaces mock
-        ws `shouldBe` Right []
+        map name ws `shouldBe` []
 
     let createWorkspaces mock wss = do
           traverse_ (createWorkspace mock) wss
@@ -31,13 +31,13 @@ tests =
         mock <- defaultMock
         createWorkspaces mock ["foo"]
         ws <- getWorkspaces mock
-        map name <$> ws `shouldBe` Right ["1:foo"]
+        map name ws `shouldBe` ["1:foo"]
 
       it "creates multiple workspaces with increasing numbers" $ do
         mock <- defaultMock
         createWorkspaces mock ["foo", "bar"]
         ws <- getWorkspaces mock
-        map name <$> ws `shouldBe` Right ["1:foo", "2:bar"]
+        map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "moveRight" $ do
       it "move last is identity" $ do
@@ -45,7 +45,7 @@ tests =
         createWorkspaces mock ["foo", "bar"]
         moveRight mock
         ws <- getWorkspaces mock
-        map name <$> ws `shouldBe` Right ["1:foo", "2:bar"]
+        map name ws `shouldBe` ["1:foo", "2:bar"]
 
       it "move left then right is identity" $ do
         mock <- defaultMock
@@ -53,7 +53,7 @@ tests =
         moveLeft mock
         moveRight mock
         ws <- getWorkspaces mock
-        map name <$> ws `shouldBe` Right ["1:foo", "2:bar"]
+        map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "moveLeft" $ do
       it "moves last to first" $ do
@@ -62,7 +62,7 @@ tests =
         moveLeft mock
         moveLeft mock
         ws <- getWorkspaces mock
-        map name <$> ws `shouldBe` Right ["1:baz", "2:foo", "3:bar"]
+        map name ws `shouldBe` ["1:baz", "2:foo", "3:bar"]
 
     describe "renumber" $ do
       it "is unchanged with sequenced numbers" $

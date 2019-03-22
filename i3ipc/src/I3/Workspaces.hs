@@ -1,8 +1,10 @@
 module I3.Workspaces where
 
+import Control.Monad (when)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.ByteString.Lazy.UTF8 (fromString)
+import Data.Foldable (traverse_)
 import GHC.Generics
+import I3.Command
 import I3.IPC
 
 data Geometry = Geometry
@@ -28,25 +30,21 @@ data Workspace = Workspace
 instance FromJSON Workspace
 instance ToJSON Workspace
 
-getWorkspaces :: Invoker -> IO (Either String [Workspace])
+getWorkspaces :: Invoker -> IO [Workspace]
 getWorkspaces inv = invoke inv (Request Workspaces mempty)
 
-createWorkspace :: Invoker -> String -> IO (Either String ())
-createWorkspace inv name' = do
-  let cmd = fromString ("workspace \"" <> name' <> "\"")
-  invoke inv (Request Command cmd)
+createWorkspace :: Invoker -> String -> IO ()
+createWorkspace inv name' = command inv ("workspace \"" <> name' <> "\"")
 
-moveContainer :: Invoker -> String -> IO (Either String ())
+moveContainer :: Invoker -> String -> IO ()
 moveContainer inv name' = do
-  let cmd = fromString ("move container to workspace \"" <> name' <> "\"")
-  invoke inv (Request Command cmd)
+  let cmd = "move container to workspace \"" <> name' <> "\""
+  command inv cmd
 
-rename :: Invoker -> String -> String -> IO (Either String ())
+rename :: Invoker -> String -> String -> IO ()
 rename inv old new = do
-  let cmd = "rename workspace \"" <> fromString old <> "\" to \"" <> fromString new <> "\""
-  if old == new
-    then pure (Right ())
-    else invoke inv (Request Command cmd)
+  let cmd = "rename workspace \"" <> old <> "\" to \"" <> new <> "\""
+  when (old /= new) $ command inv cmd
 
-renameAll :: Invoker -> [(String, String)] -> IO (Either String ())
-renameAll inv = fmap sequence_ <$> traverse (uncurry $ rename inv)
+renameAll :: Invoker -> [(String, String)] -> IO ()
+renameAll inv = traverse_ (uncurry $ rename inv)

@@ -33,6 +33,7 @@ library:
     - process
     - text
     - utf8-string
+    - vector
 
 tests:
   i3ipc-test:

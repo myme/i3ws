@@ -1,6 +1,7 @@
 module I3WS where
 
 import Control.Arrow ((>>>))
+import Control.Monad (void)
 import Data.Aeson (Value(..))
 import Data.Char (toLower)
 import Data.Maybe (mapMaybe, fromMaybe)
@@ -36,9 +37,9 @@ workspaceIcons =
   unwords
 
 -- | Add number and annotations to workspaces.
-numberAndAnnotate :: Invoker -> IO (Either String ())
+numberAndAnnotate :: Invoker -> IO ()
 numberAndAnnotate inv = do
-  wss <- either fail workspaces <$> getTree inv
+  wss <- workspaces <$> getTree inv
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
       renames = zip oldNames (renumber withIcons)
   renameAll inv renames
@@ -49,8 +50,7 @@ numberAndAnnotate inv = do
 -- | Rename workspaces automatically based on contained windows.
 autoRenameWorkspaces :: Invoker -> IO ()
 autoRenameWorkspaces inv = do
-  let handler = numberAndAnnotate inv
-      subHandler :: (t, Value) -> IO (Either String ())
-      subHandler = const handler
-  either fail pure =<< handler
-  either fail pure =<< subscribe inv [Window, Workspace] subHandler
+  let handler :: (EventT, Value) -> IO ()
+      handler _ = void $ numberAndAnnotate inv
+  void $ numberAndAnnotate inv
+  subscribe inv [Window, Workspace] handler

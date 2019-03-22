@@ -22,7 +22,7 @@ tests = do
       it "returns current tree" $
         property $ \(MockTree node) -> do
           root <- getTree (static node)
-          root `shouldBe` Right node
+          root `shouldBe` node
 
     describe "flatten" $ do
       it "always returns root as first element" $ do
