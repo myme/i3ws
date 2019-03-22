@@ -54,16 +54,16 @@ defaultMock = do
 
 renameWorkspace :: FromJSON a => IORef Workspaces -> ByteString -> ByteString -> IO (Response a)
 renameWorkspace ref from to = case (,) <$> decode from <*> decode to of
-  Nothing -> pure (Response Command (eitherDecode "{\"success\":false}"))
+  Nothing -> pure (Response Command (eitherDecode "[{\"success\":false,\"error\":\"foo\"}]"))
   Just (f, t) -> do
     let rename' ws | name ws == f = ws { name = t }
                    | otherwise = ws
     modifyIORef' ref (sortWs . map rename')
-    pure (Response Command (eitherDecode ""))
+    pure (Response Command (eitherDecode "[{\"success\":true}]"))
 
 switchWorkspace :: FromJSON a => IORef Workspaces -> ByteString -> IO (Response a)
 switchWorkspace ref n = case decode n of
-  Nothing -> pure (Response Command (eitherDecode "{\"success\":false}"))
+  Nothing -> pure (Response Command (eitherDecode "[{\"success\":false,\"error\":\"foo\"}]"))
   Just name' -> do
     let new = defaultWorkspace { name = name' }
         maybeAddNew wss = case find ((== name') . name) wss of
@@ -71,4 +71,4 @@ switchWorkspace ref n = case decode n of
           Just _  -> wss
         setFocus ws = ws { focused = name ws == name' }
     modifyIORef' ref (sortWs . map setFocus . maybeAddNew)
-    pure (Response Command (eitherDecode ""))
+    pure (Response Command (eitherDecode "[{\"success\":true}]"))
