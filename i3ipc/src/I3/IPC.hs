@@ -83,7 +83,7 @@ subscribe' socketPath events handler =
     let req = Request Subscribe eventsJson
         eventsJson = encode $ map (map toLower . show) events
     (Response _ res) <- invoke' sock req
-    case res >>= checkSuccess of
+    case res >>= runParser checkSuccess of
       Left err -> throwIO (CommandFailed err)
       Right () -> handleEvents sock
   where handleEvents sock = do
@@ -92,13 +92,15 @@ subscribe' socketPath events handler =
             Left err -> throwIO (CommandFailed err)
             Right  x -> handler (type', x) >> handleEvents sock
 
-checkSuccess :: Value -> Either String ()
-checkSuccess = join . parseEither parseResponse
-  where parseResponse = withObject "response" $ \obj -> do
-          success <- obj .: "success"
-          if not success
-            then Left <$> (obj .: "error")
-            else pure (Right ())
+runParser :: (Value -> Parser (Either String a)) -> Value -> Either String a
+runParser parser = join . parseEither parser
+
+checkSuccess :: Value -> Parser (Either String ())
+checkSuccess = withObject "response" $ \obj -> do
+  success <- obj .: "success"
+  if not success
+    then Left <$> (obj .: "error")
+    else pure (Right ())
 
 getSocketPath :: IO FilePath
 getSocketPath =
