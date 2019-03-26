@@ -1,12 +1,20 @@
 module I3WS.Workspaces where
 
 import Control.Arrow ((>>>))
+import Control.Exception (bracket_)
+import Data.Aeson
 import Data.Char (isDigit, isSpace)
 import Data.Semigroup hiding (option)
 import I3.IPC
 import I3.Workspaces
 import Text.ParserCombinators.ReadP
 import Text.Read (readMaybe)
+
+-- | Bracket an IO action with tick events to temporarily disable event listening.
+withEventsIgnored :: Invoker -> IO a -> IO a
+withEventsIgnored inv = bracket_ (setIgnore True) (setIgnore False)
+  where payload   i = encode $ object ["ignoreEvents" .= i]
+        setIgnore i = runParser checkSuccess <$> invoke inv (Request Tick (payload i))
 
 renumber :: [String] -> [String]
 renumber = zipWith newName' (map show [1 :: Int ..])
@@ -17,9 +25,9 @@ renumber = zipWith newName' (map show [1 :: Int ..])
 -- | Generate rename commands for swapping two workspaces.
 swap :: Workspace -> Workspace -> [(String, String)]
 swap l r = [(name r, tmp)
-              ,(name l, concatName rn lm)
-              ,(tmp, concatName ln rm)
-              ]
+           ,(name l, concatName rn lm)
+           ,(tmp, concatName ln rm)
+           ]
   where (ln, lm) = parseName (name l)
         (rn, rm) = parseName (name r)
         tmp = concatName rn "tmp"
@@ -27,7 +35,7 @@ swap l r = [(name r, tmp)
 
 -- | Move current workspace one position to the right.
 moveRight :: Invoker -> IO ()
-moveRight inv = do
+moveRight inv = withEventsIgnored inv $ do
   wss <- getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
   where reorder' (l, r) | focused l = swap l r
@@ -35,7 +43,7 @@ moveRight inv = do
 
 -- | Move current workspace one position to the left.
 moveLeft :: Invoker -> IO ()
-moveLeft inv = do
+moveLeft inv = withEventsIgnored inv $ do
   wss <- getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
   where reorder' (l, r) | focused r = swap l r

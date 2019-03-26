@@ -2,10 +2,10 @@ module I3WS where
 
 import Control.Arrow ((>>>))
 import Control.Monad (unless)
-import Data.IORef
 import Data.Aeson ((.:), (.:?), (.!=), withObject, withEmbeddedJSON, Result(..), Value(..))
 import Data.Aeson.Types (parse)
 import Data.Char (toLower)
+import Data.IORef
 import Data.Maybe (mapMaybe, fromMaybe)
 import FontAwesome.Icons
 import I3
@@ -55,12 +55,10 @@ autoRenameWorkspaces inv = do
   ignoreEvents <- newIORef False
   numberAndAnnotate inv
   subscribe inv [Window, Workspace, ETick] $ \case
-    (ETick, payload) -> do
-      case parseTick payload of
-        Error err        -> print err
-        Success Nothing  -> pure ()
-        Success (Just i) -> writeIORef ignoreEvents i
-      readIORef ignoreEvents >>= print
+    (ETick, payload) -> case parseTick payload of
+      Error err        -> print err
+      Success Nothing  -> pure ()
+      Success (Just i) -> writeIORef ignoreEvents i
     _ -> do
       shouldIgnore <- readIORef ignoreEvents
       unless shouldIgnore (numberAndAnnotate inv)
