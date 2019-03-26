@@ -1,8 +1,10 @@
 module I3WS where
 
 import Control.Arrow ((>>>))
-import Control.Monad (void)
-import Data.Aeson (Value(..))
+import Control.Monad (unless)
+import Data.IORef
+import Data.Aeson ((.:), (.:?), (.!=), withObject, withEmbeddedJSON, Result(..), Value(..))
+import Data.Aeson.Types (parse)
 import Data.Char (toLower)
 import Data.Maybe (mapMaybe, fromMaybe)
 import FontAwesome.Icons
@@ -10,7 +12,7 @@ import I3
 import I3.IPC
 import I3.Tree hiding (Workspace)
 import I3.Workspaces hiding (Workspace)
-import I3WS.Workspaces
+import I3WS.Workspaces hiding (parse)
 
 -- | Map window class to icons.
 appIcon :: String -> String
@@ -50,7 +52,24 @@ numberAndAnnotate inv = do
 -- | Rename workspaces automatically based on contained windows.
 autoRenameWorkspaces :: Invoker -> IO ()
 autoRenameWorkspaces inv = do
-  let handler :: (EventT, Value) -> IO ()
-      handler _ = void $ numberAndAnnotate inv
-  void $ numberAndAnnotate inv
-  subscribe inv [Window, Workspace] handler
+  ignoreEvents <- newIORef False
+  numberAndAnnotate inv
+  subscribe inv [Window, Workspace, ETick] $ \case
+    (ETick, payload) -> do
+      case parseTick payload of
+        Error err        -> print err
+        Success Nothing  -> pure ()
+        Success (Just i) -> writeIORef ignoreEvents i
+      readIORef ignoreEvents >>= print
+    _ -> do
+      shouldIgnore <- readIORef ignoreEvents
+      unless shouldIgnore (numberAndAnnotate inv)
+  where
+    parseTick :: Value -> Result (Maybe Bool)
+    parseTick = parse $ withObject "event" $ \event -> do
+      first <- event .:? "first" .!= False
+      if first
+        then pure Nothing
+        else Just <$> (
+          event .: "payload" >>= withEmbeddedJSON "payload" (
+              withObject "payload" (.: "ignoreEvents")))

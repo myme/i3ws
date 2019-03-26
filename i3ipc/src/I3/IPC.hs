@@ -77,11 +77,15 @@ subscribe = getSubscriber
 invoke' :: FromJSON a => Socket -> Request -> IO (Response a)
 invoke' sock req = send sock req >> recv sock
 
+eventString :: EventT -> String
+eventString ETick = "tick"
+eventString ev    = map toLower (show ev)
+
 subscribe' :: FromJSON a => FilePath -> [EventT] -> EventHandler a -> IO ()
 subscribe' socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
-        eventsJson = encode $ map (map toLower . show) events
+        eventsJson = encode $ map eventString events
     (Response _ res) <- invoke' sock req
     case res >>= runParser checkSuccess of
       Left err -> throwIO (CommandFailed err)
