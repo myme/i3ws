@@ -49,8 +49,8 @@ newName inv = do
   let mklast = fmap Last . fst . parseName . name
   maybe "1" (show . (+1) . getLast) . foldMap mklast <$> getWorkspaces inv
 
-newWorkspace inv = newName inv >>= createWorkspace inv
 newWorkspace :: Invoker -> IO ()
+newWorkspace inv = newName inv >>= createWorkspace inv
 
 -- | Assigns sequential numbers to all workspaces.
 assignNumbers :: Invoker -> IO ()
