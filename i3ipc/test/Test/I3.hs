@@ -34,3 +34,8 @@ tests = do
       it "always returns Con, FloatingCon" $ do
         property $ \(MockTree node) -> do
           leaves node `shouldSatisfy` all ((`elem` [Con, FloatingCon]) . node_type)
+
+    describe "workspaces" $ do
+      it "always returns Workspace" $ do
+        property $ \(MockTree node) -> do
+          workspaces node `shouldSatisfy` all ((== Workspace) . node_type)
