@@ -37,6 +37,7 @@ defaultMock = do
   mockLog    <- newIORef mempty
 
   let handler :: FromJSON a => Request -> IO (Response a)
+      handler (Request Tick _) = pure (Response Tick (eitherDecode "{\"success\":true}"))
       handler (Request Workspaces _) = do
         ws <- readIORef workspaces
         pure (Response IPC.Workspaces (eitherDecode (encode ws)))
