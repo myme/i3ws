@@ -1,14 +1,25 @@
 module Test.I3 where
 
-import Data.Aeson (ToJSON, eitherDecode, encode)
+import Control.Exception
+import Data.Aeson
+import Data.Either
+import I3.Command
 import I3.IPC hiding (Output, Workspace)
 import I3.Tree
 import Test.Hspec
 import Test.MockTree
 import Test.QuickCheck
 
-static :: ToJSON a => a -> Invoker
-static res = Invoker
+staticCmd :: ToJSON a => a -> Invoker
+staticCmd res = Invoker
+  { getInvoker = \case
+      (Request Command _) -> pure (Response Command (eitherDecode (encode res)))
+      _                   -> undefined
+  , getSubscriber = undefined
+  }
+
+staticTree :: ToJSON a => a -> Invoker
+staticTree res = Invoker
   { getInvoker = \case
       (Request Tree _) -> pure (Response Tree (eitherDecode (encode res)))
       _                -> undefined
@@ -17,11 +28,36 @@ static res = Invoker
 
 tests :: Spec
 tests = do
+  describe "Command" $ do
+    describe "command" $ do
+      let try' :: IO a -> IO (Either I3Error a)
+          try' = try
+
+      it "checks success" $ do
+        let success = [object ["success" .= True]]
+        res <- try' $ command (staticCmd success) "foo bar"
+        res `shouldBe` Right ()
+
+      it "throws error" $ do
+        let reply = [object ["success" .= False, "error" .= ("some error" :: Value)]]
+        res <- try' $ command (staticCmd reply) "foo bar"
+        res `shouldBe` Left (CommandFailed "some error")
+
+      it "fails without array response" $ do
+        let success = object ["success" .= True]
+        res <- try' $ command (staticCmd success) "foo bar"
+        res `shouldSatisfy` isLeft
+
+      it "fails with multiple responses" $ do
+        let success = [object ["success" .= True], object ["success" .= True]]
+        res <- try' $ command (staticCmd success) "foo bar"
+        res `shouldSatisfy` isLeft
+
   describe "Tree" $ do
     describe "getTree" $ do
       it "returns current tree" $
         property $ \(MockTree node) -> do
-          root <- getTree (static node)
+          root <- getTree (staticTree node)
           root `shouldBe` node
 
     describe "flatten" $ do
