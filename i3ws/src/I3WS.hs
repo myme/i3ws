@@ -1,7 +1,7 @@
 module I3WS where
 
 import Control.Arrow ((>>>))
-import Control.Monad (unless)
+import Control.Monad ((<=<), unless)
 import Data.Aeson ((.:), (.:?), (.!=), withObject, withEmbeddedJSON, Result(..), Value(..))
 import Data.Aeson.Types (parse)
 import Data.Char (toLower)
@@ -34,7 +34,7 @@ appIcon app = case map toLower app of
 workspaceIcons :: Node -> String
 workspaceIcons =
   leaves >>>
-  map (fmap win_class . node_window_properties) >>>
+  map (win_class <=< node_window_properties) >>>
   map (appIcon . fromMaybe "") >>>
   unwords
 

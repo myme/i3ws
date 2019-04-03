@@ -33,9 +33,9 @@ instance ToJSON NodeType where
   toJSON Dockarea    = "dockarea"
 
 data WindowProps = WindowProps
-  { win_class :: String
-  , win_instance :: String
-  , win_title :: String
+  { win_class :: Maybe String
+  , win_instance :: Maybe String
+  , win_title :: Maybe String
   } deriving (Eq, Show)
 
 $(deriveJSON
