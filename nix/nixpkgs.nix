@@ -2,7 +2,6 @@ let
   nixpkgs = import <nixpkgs> { inherit config; };
   gitignore = nixpkgs.nix-gitignore.gitignoreSourcePure [ ../.gitignore ];
   config = {
-    # allowUnfree = true;
     packageOverrides = pkgs: rec {
       haskellPackages = pkgs.haskell.packages.ghc864.override {
         overrides = self: super: (
