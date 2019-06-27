@@ -1,28 +1,36 @@
 module Main where
 
-import Control.Monad
 import I3 hiding (command)
 import I3.IPC (Invoker)
 import I3WS
 import I3WS.Workspaces
 import Options.Applicative
 
-data Dir = MoveLeft | MoveRight
+data Options = Options { _handler :: Invoker -> IO ()
+                       , _debug :: Bool
+                       }
 
-opts :: Invoker -> Parser (IO ())
-opts i3 = subparser
-  (  command "monitor" (info (pure monitor) idm)
-  <> command "move" (info (move <$> argument (maybeReader readDir) idm) idm)
-  <> command "new" (info (pure new) idm) )
-  where monitor = autoRenameWorkspaces i3
-        move MoveLeft  = moveLeft i3
-        move MoveRight = moveRight i3
-        new = newWorkspace i3
+data MoveDir = MoveLeft | MoveRight
+
+opts :: Parser Options
+opts = Options <$> commandParser <*> debugParser
+  where debugParser = flag False True (short 'd' <> long "debug" <> help "Enable debug output")
+        move MoveLeft  = moveLeft
+        move MoveRight = moveRight
         readDir "left"  = Just MoveLeft
         readDir "right" = Just MoveRight
         readDir _ = Nothing
+        commandParser = subparser (
+          command "monitor" (
+              info (pure autoRenameWorkspaces) (progDesc "Automatically name i3 workspaces")) <>
+          command "move" (
+              info (move <$> argument (maybeReader readDir) idm) (progDesc "Move a workspace")) <>
+          command "new" (
+              info (pure newWorkspace) (progDesc "Create a new workspace")))
 
 main :: IO ()
 main = do
-  i3 <- initI3
-  join $ execParser (info (opts i3) idm)
+  options <- execParser $
+    info (opts <**> helper) (fullDesc <> progDesc "Various handy i3 integrations")
+  i3 <- initI3 (_debug options)
+  _handler options i3
