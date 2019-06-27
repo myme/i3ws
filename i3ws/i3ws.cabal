@@ -42,7 +42,7 @@ library
     , utf8-string
   default-language: Haskell2010
 
-executable i3ws
+executable i3ws-exe
   main-is: Main.hs
   other-modules:
       Paths_i3ws
@@ -54,6 +54,7 @@ executable i3ws
       base >=4.7 && <5
     , i3ipc
     , i3ws
+    , optparse-applicative
   default-language: Haskell2010
 
 test-suite i3ws-test
