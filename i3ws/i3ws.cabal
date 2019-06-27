@@ -42,7 +42,7 @@ library
     , utf8-string
   default-language: Haskell2010
 
-executable i3ws-exe
+executable i3ws
   main-is: Main.hs
   other-modules:
       Paths_i3ws
