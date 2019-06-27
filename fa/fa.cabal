@@ -1,0 +1,29 @@
+cabal-version: 1.12
+
+name:               fa
+version:            0.1.0.0
+description:        Please see the README on GitHub at <https://github.com/myme/i3ws#readme>
+homepage:           https://github.com/myme/i3ws#readme
+bug-reports:        https://github.com/myme/i3ws/issues
+author:             Martin Myrseth
+maintainer:         @myme
+copyright:          2019 Martin Myrseth
+license:            BSD3
+license-file:       LICENSE
+build-type:         Simple
+extra-source-files: README.md
+
+source-repository head
+  type: git
+  location: https://github.com/myme/i3ws
+
+library
+  exposed-modules:    FontAwesome.Icons
+  other-modules:      Paths_fa
+  hs-source-dirs:     src/
+  default-extensions: DeriveGeneric
+                    , LambdaCase
+                    , OverloadedStrings
+  ghc-options:        -Wall
+  build-depends:      base >=4.7 && <5
+  default-language:   Haskell2010
