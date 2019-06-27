@@ -52,17 +52,17 @@ newtype I3Error = CommandFailed String deriving (Eq, Show)
 instance Exception I3Error
 
 data Invoker = Invoker
-  { getInvoker    :: forall a. FromJSON a => Request -> IO (Response a)
+  { getInvoker    :: forall a. (FromJSON a, Show a) => Request -> IO (Response a)
   , getSubscriber :: forall a. FromJSON a => [EventT] -> EventHandler a -> IO ()
   }
 
 i3Invoker :: I3 -> Invoker
 i3Invoker i3 = Invoker
-  { getInvoker = invoke' (i3CmdSocket i3)
-  , getSubscriber = subscribe' (i3SocketPath i3)
+  { getInvoker = invoke' (i3Trace i3) (i3CmdSocket i3)
+  , getSubscriber = subscribe' (i3Trace i3) (i3SocketPath i3)
   }
 
-invoke :: FromJSON a => Invoker -> Request -> IO a
+invoke :: (FromJSON a, Show a) => Invoker -> Request -> IO a
 invoke inv req = do
   res <- getInvoker inv req
   let (Request  reqT _) = req
@@ -74,19 +74,23 @@ invoke inv req = do
 subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO ()
 subscribe = getSubscriber
 
-invoke' :: FromJSON a => Socket -> Request -> IO (Response a)
-invoke' sock req = send sock req >> recv sock
+invoke' :: (FromJSON a, Show a) => Bool -> Socket -> Request -> IO (Response a)
+invoke' trace sock req = do
+  when trace (print req)
+  res <- send sock req >> recv sock
+  when trace (print res)
+  return res
 
 eventString :: EventT -> String
 eventString ETick = "tick"
 eventString ev    = map toLower (show ev)
 
-subscribe' :: FromJSON a => FilePath -> [EventT] -> EventHandler a -> IO ()
-subscribe' socketPath events handler =
+subscribe' :: FromJSON a => Bool -> FilePath -> [EventT] -> EventHandler a -> IO ()
+subscribe' trace socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
         eventsJson = encode $ map eventString events
-    (Response _ res) <- invoke' sock req
+    (Response _ res) <- invoke' trace sock req
     case res >>= runParser checkSuccess of
       Left err -> throwIO (CommandFailed err)
       Right () -> handleEvents sock
