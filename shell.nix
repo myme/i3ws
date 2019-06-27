@@ -5,6 +5,5 @@ in nixpkgs.haskellPackages.shellFor {
   packages = with builtins; ps: map (p: getAttr p ps) (attrNames packages);
   buildInputs = with nixpkgs.haskellPackages; [
     cabal-install
-    hpack
   ];
 }

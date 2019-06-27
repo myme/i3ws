@@ -15,10 +15,8 @@ let
                   then (
                     let
                       cabal_file = (builtins.match "(.*)\\.cabal" file);
-                      hpack_file = file == "package.yaml";
                     in
-                      if hpack_file then { "${baseNameOf root}" = root; }
-                      else if !(isNull cabal_file) then { "${builtins.elemAt cabal_file 0}" = root; }
+                      if !(isNull cabal_file) then { "${builtins.elemAt cabal_file 0}" = root; }
                       else {}
                   )
                   else {}
