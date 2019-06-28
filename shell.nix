@@ -6,5 +6,6 @@ in nixpkgs.haskellPackages.shellFor {
   buildInputs = with nixpkgs.haskellPackages; [
     cabal-install
     ghcid
+    hlint
   ];
 }
