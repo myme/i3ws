@@ -30,7 +30,7 @@ library
       Paths_i3ipc
   hs-source-dirs:
       src/
-  default-extensions: DeriveGeneric LambdaCase OverloadedStrings
+  default-extensions: DeriveGeneric LambdaCase OverloadedStrings RankNTypes
   ghc-options: -Wall
   build-depends:
       aeson

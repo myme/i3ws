@@ -1,5 +1,3 @@
-{-# LANGUAGE RankNTypes #-}
-
 module I3.IPC where
 
 import           Control.Exception
