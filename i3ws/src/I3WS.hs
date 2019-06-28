@@ -39,21 +39,23 @@ workspaceIcons =
   unwords
 
 -- | Add number and annotations to workspaces.
-numberAndAnnotate :: Invoker -> IO ()
-numberAndAnnotate inv = do
+numberAndAnnotate :: Invoker -> Bool -> IO ()
+numberAndAnnotate inv icons = do
   wss <- workspaces <$> getTree inv
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
-      renames = zip oldNames (renumber withIcons)
+      renumbered = if icons then renumber withIcons else map show [1 :: Int ..]
+      renames = zip oldNames renumbered
   renameAll inv renames
   where wsIcons ws = do
           name' <- node_name ws
           pure (name', workspaceIcons ws)
 
+-- TODO: Ensure tree isn't fetched when not needed (e.g. focus switch)
 -- | Rename workspaces automatically based on contained windows.
-autoRenameWorkspaces :: Invoker -> IO ()
-autoRenameWorkspaces inv = do
+autoRenameWorkspaces :: Invoker -> Bool -> IO ()
+autoRenameWorkspaces inv icons = do
   ignoreEvents <- newIORef False
-  numberAndAnnotate inv
+  numberAndAnnotate inv icons
   subscribe inv [Window, Workspace, ETick] $ \case
     (ETick, payload) -> case parseTick payload of
       Error err        -> print err
@@ -61,7 +63,7 @@ autoRenameWorkspaces inv = do
       Success (Just i) -> writeIORef ignoreEvents i
     _ -> do
       shouldIgnore <- readIORef ignoreEvents
-      unless shouldIgnore (numberAndAnnotate inv)
+      unless shouldIgnore (numberAndAnnotate inv icons)
   where
     parseTick :: Value -> Result (Maybe Bool)
     parseTick = parse $ withObject "event" $ \event -> do
