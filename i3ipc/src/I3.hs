@@ -21,5 +21,5 @@ initI3 debug = do
   pure $ i3Invoker $ I3
     { i3SocketPath = socketPath
     , i3CmdSocket = cmdSock
-    , i3Trace = debug
+    , i3Debug = debug
     }

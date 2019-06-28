@@ -58,8 +58,8 @@ data Invoker = Invoker
 
 i3Invoker :: I3 -> Invoker
 i3Invoker i3 = Invoker
-  { getInvoker = invoke' (i3Trace i3) (i3CmdSocket i3)
-  , getSubscriber = subscribe' (i3Trace i3) (i3SocketPath i3)
+  { getInvoker = invoke' (i3Debug i3) (i3CmdSocket i3)
+  , getSubscriber = subscribe' (i3Debug i3) (i3SocketPath i3)
   }
 
 invoke :: (FromJSON a, Show a) => Invoker -> Request -> IO a
@@ -75,10 +75,10 @@ subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO ()
 subscribe = getSubscriber
 
 invoke' :: (FromJSON a, Show a) => I3Debug -> Socket -> Request -> IO (Response a)
-invoke' trace sock req = do
-  when (trace >= I3DebugInfo) (print req)
+invoke' debug sock req = do
+  when (debug >= I3DebugInfo) (print req)
   res <- send sock req >> recv sock
-  when (trace >= I3DebugTrace) (print res)
+  when (debug >= I3DebugTrace) (print res)
   return res
 
 eventString :: EventT -> String
