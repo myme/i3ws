@@ -6,15 +6,22 @@ import I3WS
 import I3WS.Workspaces
 import Options.Applicative
 
-data Options = Options { _handler :: Invoker -> IO ()
-                       , _debug :: Bool
+data Options = Options { _handler :: Invoker -> IO () -- ^ Sub-command handler
+                       , _debug :: I3Debug -- ^ Debug level
                        }
 
 data MoveDir = MoveLeft | MoveRight
 
+toDebug :: Int -> I3Debug
+toDebug 0 = I3DebugOff
+toDebug 1 = I3DebugInfo
+toDebug _ = I3DebugTrace
+
 opts :: Parser Options
-opts = Options <$> commandParser <*> debugParser
-  where debugParser = flag False True (short 'd' <> long "debug" <> help "Enable debug output")
+opts = Options
+  <$> commandParser
+  <*> (toDebug . length <$> many debugParser)
+  where debugParser = flag' () (short 'd' <> long "debug" <> help "Enable debug output")
         move MoveLeft  = moveLeft
         move MoveRight = moveRight
         readDir "left"  = Just MoveLeft

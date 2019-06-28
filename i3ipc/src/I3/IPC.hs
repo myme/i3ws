@@ -74,23 +74,23 @@ invoke inv req = do
 subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO ()
 subscribe = getSubscriber
 
-invoke' :: (FromJSON a, Show a) => Bool -> Socket -> Request -> IO (Response a)
+invoke' :: (FromJSON a, Show a) => I3Debug -> Socket -> Request -> IO (Response a)
 invoke' trace sock req = do
-  when trace (print req)
+  when (trace >= I3DebugInfo) (print req)
   res <- send sock req >> recv sock
-  when trace (print res)
+  when (trace >= I3DebugTrace) (print res)
   return res
 
 eventString :: EventT -> String
 eventString ETick = "tick"
 eventString ev    = map toLower (show ev)
 
-subscribe' :: FromJSON a => Bool -> FilePath -> [EventT] -> EventHandler a -> IO ()
-subscribe' trace socketPath events handler =
+subscribe' :: FromJSON a => I3Debug -> FilePath -> [EventT] -> EventHandler a -> IO ()
+subscribe' debug socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
         eventsJson = encode $ map eventString events
-    (Response _ res) <- invoke' trace sock req
+    (Response _ res) <- invoke' debug sock req
     case res >>= runParser checkSuccess of
       Left err -> throwIO (CommandFailed err)
       Right () -> handleEvents sock
