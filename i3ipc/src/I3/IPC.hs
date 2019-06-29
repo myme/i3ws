@@ -51,7 +51,7 @@ instance Exception I3Error
 
 data Invoker = Invoker
   { getInvoker    :: forall a. (FromJSON a, Show a) => Request -> IO (Response a)
-  , getSubscriber :: forall a. FromJSON a => [EventT] -> EventHandler a -> IO ()
+  , getSubscriber :: forall a. (FromJSON a, Show a) => [EventT] -> EventHandler a -> IO ()
   }
 
 i3Invoker :: I3 -> Invoker
@@ -69,7 +69,7 @@ invoke inv req = do
     throwIO (CommandFailed "Mismatching request/response types")
   either (throwIO . CommandFailed) pure response
 
-subscribe :: FromJSON a => Invoker -> [EventT] -> EventHandler a -> IO ()
+subscribe :: (FromJSON a, Show a) => Invoker -> [EventT] -> EventHandler a -> IO ()
 subscribe = getSubscriber
 
 invoke' :: (FromJSON a, Show a) => I3Debug -> Socket -> Request -> IO (Response a)
@@ -83,7 +83,7 @@ eventString :: EventT -> String
 eventString ETick = "tick"
 eventString ev    = map toLower (show ev)
 
-subscribe' :: FromJSON a => I3Debug -> FilePath -> [EventT] -> EventHandler a -> IO ()
+subscribe' :: (FromJSON a, Show a) => I3Debug -> FilePath -> [EventT] -> EventHandler a -> IO ()
 subscribe' debug socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
@@ -93,7 +93,7 @@ subscribe' debug socketPath events handler =
       Left err -> throwIO (CommandFailed err)
       Right () -> handleEvents sock
   where handleEvents sock = do
-          (Event type' payload) <- recvEvent sock
+          (Event type' payload) <- recvEvent sock debug
           case payload of
             Left err -> throwIO (CommandFailed err)
             Right  x -> handler (type', x) >> handleEvents sock
@@ -171,8 +171,10 @@ recv sock = do
   resType <- either (\_ -> fail "Unexpected Event") pure type'
   pure (Response resType (eitherDecode payload))
 
-recvEvent :: FromJSON a => Socket -> IO (Event a)
-recvEvent sock = do
+recvEvent :: FromJSON a => Socket -> I3Debug -> IO (Event a)
+recvEvent sock debug = do
   (type', payload) <- recvPacket sock
   evType <- either pure (\_ -> fail "Expecting Event") type'
+  when (debug >= I3DebugInfo) $
+    putStrLn $ "Event " <> show evType <> " " <> show payload
   pure (Event evType (eitherDecode payload))
