@@ -36,6 +36,9 @@ opts = Options
           command "new" (
               info (pure New) (progDesc "Create a new workspace")))
 
+-- TODO: Add command to set workspace icon/text Default is to add icons based on
+-- the workspace apps, but would be nice to allow setting text and icons based
+-- on semantics too.
 main :: IO ()
 main = do
   options <- execParser $
