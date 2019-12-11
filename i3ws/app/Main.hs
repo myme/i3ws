@@ -9,6 +9,7 @@ import Options.Applicative
 data Options = Options { _command :: Command -- ^ Sub-command handler
                        , _debug :: I3Debug -- ^ Debug level
                        , _icons :: Bool -- ^ Use FontAwesome icons in workspace names
+                       , _separator :: String -- ^ Separator between workspace number and icons
                        }
 
 data MoveDir = MoveLeft | MoveRight
@@ -24,8 +25,10 @@ opts = Options
   <$> commandParser
   <*> (toDebug . length <$> many debugParser)
   <*> iconsParser
+  <*> separatorParser
   where debugParser = flag' () (short 'd' <> long "debug" <> help "Enable debug output")
         iconsParser = flag False True (short 'i' <> long "icons" <> help "Use FontAwesome icons")
+        separatorParser = option str (short 's' <> long "separator" <> help "Separator between number and icons")
         readDir "left"  = Just MoveLeft
         readDir "right" = Just MoveRight
         readDir _ = Nothing
@@ -48,6 +51,7 @@ main = do
   let config = Config
         { i3ws_debug = _debug options
         , i3ws_icons = _icons options
+        , i3ws_separator = _separator options
         , i3ws_invoker = i3
         }
   runI3WS config $ case _command options of

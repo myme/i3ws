@@ -19,11 +19,11 @@ withEventsIgnored = bracket_ (setIgnore True) (setIgnore False)
           inv <- i3ws_invoker <$> ask
           runParser checkSuccess <$> invoke inv (Request Tick (payload i))
 
-renumber :: [String] -> [String]
-renumber = zipWith newName' (map show [1 :: Int ..])
+renumber :: String -> [String] -> [String]
+renumber separator = zipWith newName' (map show [1 :: Int ..])
   where newName' i old =
           let (_, label) = parseName old
-          in if null label then i else i <> ":" <> label
+          in if null label then i else i <> separator <> label
 
 -- | Generate rename commands for swapping two workspaces.
 swap :: Workspace -> Workspace -> [(String, String)]
@@ -75,7 +75,8 @@ assignNumbers :: I3WS ()
 assignNumbers = do
   inv <- i3ws_invoker <$> ask
   wss <- map name <$> getWorkspaces inv
-  renameAll inv (zip wss (renumber wss))
+  separator <- i3ws_separator <$> ask
+  renameAll inv (zip wss (renumber separator wss))
 
 parse :: Show a => ReadP a -> String -> (Maybe a, String)
 parse parser input = case readP_to_S parser input of

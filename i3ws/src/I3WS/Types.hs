@@ -13,6 +13,7 @@ import I3.IPC
 
 data Config = Config { i3ws_debug :: I3Debug
                      , i3ws_icons :: Bool
+                     , i3ws_separator :: String
                      , i3ws_invoker :: Invoker
                      }
 

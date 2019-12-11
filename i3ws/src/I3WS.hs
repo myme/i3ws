@@ -45,8 +45,9 @@ numberAndAnnotate = do
   inv <- i3ws_invoker <$> ask
   wss <- liftIO (workspaces <$> getTree inv)
   icons <- i3ws_icons <$> ask
+  separator <- i3ws_separator <$> ask
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
-      renumbered = if icons then renumber withIcons else map show [1 :: Int ..]
+      renumbered = if icons then renumber separator withIcons else map show [1 :: Int ..]
       renames = zip oldNames renumbered
   liftIO $ renameAll inv renames
   where wsIcons ws = do
