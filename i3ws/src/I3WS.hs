@@ -25,6 +25,8 @@ appIcon app = case map toLower app of
   "emacs"                -> icon Code
   "firefox"              -> icon Firefox
   "gnome-control-center" -> icon Cog
+  "alacritty"            -> icon Terminal
+  "konsole"              -> icon Terminal
   "gnome-terminal"       -> icon Terminal
   "nautilus"             -> icon FolderOpen
   "qutebrowser"          -> icon Compass
