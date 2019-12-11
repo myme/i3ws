@@ -38,6 +38,7 @@ library
     , binary
     , bytestring
     , containers
+    , exceptions
     , network
     , process
     , text

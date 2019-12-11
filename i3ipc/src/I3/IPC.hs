@@ -1,7 +1,8 @@
 module I3.IPC where
 
-import           Control.Exception
 import           Control.Monad
+import           Control.Monad.Catch
+import           Control.Monad.IO.Class
 import           Data.Aeson (FromJSON, (.:), eitherDecode, encode, withObject)
 import           Data.Aeson.Types
 import           Data.Binary.Get
@@ -40,18 +41,18 @@ data EventT = Workspace
             | ETick
             deriving (Bounded, Enum, Show)
 
-data Request        = Request PackageType ByteString deriving Show
-data Response     a = Response PackageType (Either String a) deriving Show
-data Event        a = Event EventT (Either String a) deriving Show
-type EventHandler a = (EventT, a) -> IO ()
+data Request          = Request PackageType ByteString deriving Show
+data Response     a   = Response PackageType (Either String a) deriving Show
+data Event        a   = Event EventT (Either String a) deriving Show
+type EventHandler m a = (MonadIO m) => (EventT, a) -> m ()
 
 newtype I3Error = CommandFailed String deriving (Eq, Show)
 
 instance Exception I3Error
 
 data Invoker = Invoker
-  { getInvoker    :: forall a. (FromJSON a, Show a) => Request -> IO (Response a)
-  , getSubscriber :: forall a. (FromJSON a, Show a) => [EventT] -> EventHandler a -> IO ()
+  { getInvoker    :: forall a m. (FromJSON a, Show a, MonadIO m) => Request -> m (Response a)
+  , getSubscriber :: forall a m. (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => [EventT] -> EventHandler m a -> m ()
   }
 
 i3Invoker :: I3 -> Invoker
@@ -60,42 +61,42 @@ i3Invoker i3 = Invoker
   , getSubscriber = subscribe' (i3Debug i3) (i3SocketPath i3)
   }
 
-invoke :: (FromJSON a, Show a) => Invoker -> Request -> IO a
+invoke :: (FromJSON a, Show a, MonadIO m, MonadThrow m) => Invoker -> Request -> m a
 invoke inv req = do
   res <- getInvoker inv req
   let (Request  reqT _) = req
       (Response resT response) = res
   when (reqT /= resT) $
-    throwIO (CommandFailed "Mismatching request/response types")
-  either (throwIO . CommandFailed) pure response
+    throwM (CommandFailed "Mismatching request/response types")
+  either (throwM . CommandFailed) pure response
 
-subscribe :: (FromJSON a, Show a) => Invoker -> [EventT] -> EventHandler a -> IO ()
+subscribe :: (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => Invoker -> [EventT] -> EventHandler m a -> m ()
 subscribe = getSubscriber
 
-invoke' :: (FromJSON a, Show a) => I3Debug -> Socket -> Request -> IO (Response a)
+invoke' :: (FromJSON a, Show a, MonadIO m) => I3Debug -> Socket -> Request -> m (Response a)
 invoke' debug sock req = do
-  when (debug >= I3DebugInfo) (print req)
-  res <- send sock req >> recv sock
-  when (debug >= I3DebugTrace) (print res)
+  when (debug >= I3DebugInfo) (liftIO $ print req)
+  res <- liftIO $ send sock req >> recv sock
+  when (debug >= I3DebugTrace) (liftIO $ print res)
   return res
 
 eventString :: EventT -> String
 eventString ETick = "tick"
 eventString ev    = map toLower (show ev)
 
-subscribe' :: (FromJSON a, Show a) => I3Debug -> FilePath -> [EventT] -> EventHandler a -> IO ()
+subscribe' :: (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => I3Debug -> FilePath -> [EventT] -> EventHandler m a -> m ()
 subscribe' debug socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
         eventsJson = encode $ map eventString events
     (Response _ res) <- invoke' debug sock req
     case res >>= runParser checkSuccess of
-      Left err -> throwIO (CommandFailed err)
+      Left err -> throwM (CommandFailed err)
       Right () -> handleEvents sock
   where handleEvents sock = do
           (Event type' payload) <- recvEvent sock debug
           case payload of
-            Left err -> throwIO (CommandFailed err)
+            Left err -> throwM (CommandFailed err)
             Right  x -> handler (type', x) >> handleEvents sock
 
 runParser :: (Value -> Parser (Either String a)) -> Value -> Either String a
@@ -112,14 +113,14 @@ getSocketPath :: IO FilePath
 getSocketPath =
   head . lines <$> readProcess "i3" ["--get-socketpath"] mempty
 
-connect :: FilePath -> IO Socket
+connect :: MonadIO m => FilePath -> m Socket
 connect sockPath = do
-  sock <- Net.socket Net.AF_UNIX Net.Stream 0
-  Net.connect sock (Net.SockAddrUnix sockPath)
+  sock <- liftIO (Net.socket Net.AF_UNIX Net.Stream 0)
+  liftIO $ Net.connect sock (Net.SockAddrUnix sockPath)
   pure sock
 
-close :: Socket -> IO ()
-close = Net.close
+close :: MonadIO m => Socket -> m ()
+close = liftIO . Net.close
 
 magic :: ByteString
 magic = "i3-ipc"
@@ -171,10 +172,10 @@ recv sock = do
   resType <- either (\_ -> fail "Unexpected Event") pure type'
   pure (Response resType (eitherDecode payload))
 
-recvEvent :: FromJSON a => Socket -> I3Debug -> IO (Event a)
+recvEvent :: (FromJSON a, MonadIO m) => Socket -> I3Debug -> m (Event a)
 recvEvent sock debug = do
-  (type', payload) <- recvPacket sock
+  (type', payload) <- liftIO (recvPacket sock)
   evType <- either pure (\_ -> fail "Expecting Event") type'
-  when (debug >= I3DebugInfo) $
+  when (debug >= I3DebugInfo) $ liftIO $
     putStrLn $ "Event " <> show evType <> " " <> show payload
   pure (Event evType (eitherDecode payload))

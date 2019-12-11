@@ -1,6 +1,8 @@
 module I3.Workspaces where
 
 import Control.Monad (when)
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Foldable (traverse_)
 import GHC.Generics
@@ -30,21 +32,21 @@ data Workspace = Workspace
 instance FromJSON Workspace
 instance ToJSON Workspace
 
-getWorkspaces :: Invoker -> IO [Workspace]
+getWorkspaces :: (MonadIO m, MonadThrow m) => Invoker -> m [Workspace]
 getWorkspaces inv = invoke inv (Request Workspaces mempty)
 
-createWorkspace :: Invoker -> String -> IO ()
+createWorkspace :: (MonadIO m, MonadThrow m) => Invoker -> String -> m ()
 createWorkspace inv name' = command inv ("workspace \"" <> name' <> "\"")
 
-moveContainer :: Invoker -> String -> IO ()
+moveContainer :: (MonadIO m, MonadThrow m) => Invoker -> String -> m ()
 moveContainer inv name' = do
   let cmd = "move container to workspace \"" <> name' <> "\""
   command inv cmd
 
-rename :: Invoker -> String -> String -> IO ()
+rename :: (MonadIO m, MonadThrow m) => Invoker -> String -> String -> m ()
 rename inv old new = do
   let cmd = "rename workspace \"" <> old <> "\" to \"" <> new <> "\""
   when (old /= new) $ command inv cmd
 
-renameAll :: Invoker -> [(String, String)] -> IO ()
+renameAll :: (MonadIO m, MonadThrow m) => Invoker -> [(String, String)] -> m ()
 renameAll inv = traverse_ (uncurry $ rename inv)
