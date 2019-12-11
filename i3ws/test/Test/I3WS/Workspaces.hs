@@ -90,23 +90,23 @@ tests =
     describe "parseName" $ do
       it "Always no number" $
         property $ \(Alpha s) ->
-          parseName s `shouldBe` (Nothing, s)
+          parseName ":" s `shouldBe` (Nothing, s)
 
       it "Just number" $
-        property $ \(Positive n) -> parseName (show n) `shouldBe` (Just n, "")
+        property $ \(Positive n) -> parseName ":" (show n) `shouldBe` (Just n, "")
 
       it "Just whitespace" $
-        parseName "  " `shouldBe` (Nothing, "")
+        parseName ":" "  " `shouldBe` (Nothing, "")
 
       it "Number and whitespace" $
         property $ \(Positive n) (Positive spaces) ->
           let s = replicate spaces ' '
-          in parseName (show n <> s) `shouldBe` (Just n, "")
+          in parseName ":" (show n <> s) `shouldBe` (Just n, "")
 
       it "With number, no colon" $
         property $ \(Alpha s) (Positive n) ->
-          parseName (show n <> " " <> s) `shouldBe` (Just n, s)
+          parseName ":" (show n <> " " <> s) `shouldBe` (Just n, s)
 
       it "With number and colon" $
         property $ \(Alpha s) (Positive n) ->
-          parseName (show n <> ": " <> s) `shouldBe` (Just n, s)
+          parseName ":" (show n <> ": " <> s) `shouldBe` (Just n, s)

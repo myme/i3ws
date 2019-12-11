@@ -22,37 +22,40 @@ withEventsIgnored = bracket_ (setIgnore True) (setIgnore False)
 renumber :: String -> [String] -> [String]
 renumber separator = zipWith newName' (map show [1 :: Int ..])
   where newName' i old =
-          let (_, label) = parseName old
+          let (_, label) = parseName separator old
           in if null label then i else i <> separator <> label
 
 -- | Generate rename commands for swapping two workspaces.
-swap :: Workspace -> Workspace -> [(String, String)]
-swap l r = [(name r, tmp)
-           ,(name l, concatName rn lm)
-           ,(tmp, concatName ln rm)
-           ]
-  where (ln, lm) = parseName (name l)
-        (rn, rm) = parseName (name r)
+swap :: String -> Workspace -> Workspace -> [(String, String)]
+swap separator l r =
+  [(name r, tmp)
+  ,(name l, concatName rn lm)
+  ,(tmp, concatName ln rm)
+  ]
+  where (ln, lm) = parseName separator (name l)
+        (rn, rm) = parseName separator (name r)
         tmp = concatName rn "tmp"
-        concatName n m = maybe "" show n <> (':':m)
+        concatName n m = maybe "" show n <> (separator <> m)
 
 -- | Move current workspace one position to the right.
 moveRight :: I3WS ()
 moveRight = withEventsIgnored $ do
   inv <- i3ws_invoker <$> ask
   wss <- getWorkspaces inv
+  separator <- i3ws_separator <$> ask
+  let reorder' (l, r) | focused l = swap separator l r
+                      | otherwise = []
   renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
-  where reorder' (l, r) | focused l = swap l r
-                        | otherwise = []
 
 -- | Move current workspace one position to the left.
 moveLeft :: I3WS ()
 moveLeft = withEventsIgnored $ do
   inv <- i3ws_invoker <$> ask
   wss <- getWorkspaces inv
+  separator <- i3ws_separator <$> ask
+  let reorder' (l, r) | focused r = swap separator l r
+                      | otherwise = []
   renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
-  where reorder' (l, r) | focused r = swap l r
-                        | otherwise = []
 
 moveNew :: I3WS ()
 moveNew = do
@@ -62,7 +65,8 @@ moveNew = do
 newName :: I3WS String
 newName = do
   inv <- i3ws_invoker <$> ask
-  let mklast = fmap Last . fst . parseName . name
+  separator <- i3ws_separator <$> ask
+  let mklast = fmap Last . fst . parseName separator . name
   maybe "1" (show . (+1) . getLast) . foldMap mklast <$> getWorkspaces inv
 
 newWorkspace :: I3WS ()
@@ -86,8 +90,8 @@ parse parser input = case readP_to_S parser input of
 parseNumber :: (Num a, Read a) => ReadP (Maybe a)
 parseNumber = readMaybe <$> munch1 isDigit
 
-parseName :: String -> (Maybe Int, String)
-parseName = parse workspaceName >>> \case
+parseName :: String -> String -> (Maybe Int, String)
+parseName separator = parse workspaceName >>> \case
   (Just res, _) -> res
   (Nothing, res) -> (Nothing, res)
   where workspaceName = do
@@ -95,7 +99,6 @@ parseName = parse workspaceName >>> \case
           label <- parseLabel <++ look
           eof
           pure (num', label)
-        colon = char ':'
-        parseLabel = (colon +++ satisfy isSpace)
+        parseLabel = (string separator +++ munch1 isSpace)
           >> skipSpaces
           >> many get

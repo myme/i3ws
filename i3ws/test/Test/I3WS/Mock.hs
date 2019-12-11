@@ -26,7 +26,7 @@ defaultWorkspace = Workspace
 type Workspaces = [Workspace]
 
 sortWs :: Workspaces -> Workspaces
-sortWs = sortBy (cmp `on` parseName . name)
+sortWs = sortBy (cmp `on` parseName ":" . name)
   where cmp (Nothing, _) (Nothing, _) = LT
         cmp (Nothing, _) (Just _, _)  = GT
         cmp (Just _, _)  (Nothing, _) = LT
