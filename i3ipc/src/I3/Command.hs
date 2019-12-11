@@ -7,7 +7,7 @@ import           Data.ByteString.Lazy.UTF8 (fromString)
 import qualified Data.Vector as V
 import           I3.IPC
 
-command :: (MonadIO m, MonadThrow m) => Invoker -> String -> m ()
+command :: (MonadIO m, MonadThrow m) => Invoker m -> String -> m ()
 command inv cmd = do
   res <- checkArraySuccess <$> invoke inv (Request Command (fromString cmd))
   either (throwM . CommandFailed) pure res

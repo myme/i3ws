@@ -10,7 +10,7 @@ import Test.Hspec
 import Test.MockTree
 import Test.QuickCheck
 
-staticCmd :: ToJSON a => a -> Invoker
+staticCmd :: ToJSON a => a -> Invoker IO
 staticCmd res = Invoker
   { getInvoker = \case
       (Request Command _) -> pure (Response Command (eitherDecode (encode res)))
@@ -18,7 +18,7 @@ staticCmd res = Invoker
   , getSubscriber = undefined
   }
 
-staticTree :: ToJSON a => a -> Invoker
+staticTree :: ToJSON a => a -> Invoker IO
 staticTree res = Invoker
   { getInvoker = \case
       (Request Tree _) -> pure (Response Tree (eitherDecode (encode res)))

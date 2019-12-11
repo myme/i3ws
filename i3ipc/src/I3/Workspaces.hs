@@ -32,21 +32,21 @@ data Workspace = Workspace
 instance FromJSON Workspace
 instance ToJSON Workspace
 
-getWorkspaces :: (MonadIO m, MonadThrow m) => Invoker -> m [Workspace]
+getWorkspaces :: (MonadIO m, MonadThrow m) => Invoker m -> m [Workspace]
 getWorkspaces inv = invoke inv (Request Workspaces mempty)
 
-createWorkspace :: (MonadIO m, MonadThrow m) => Invoker -> String -> m ()
+createWorkspace :: (MonadIO m, MonadThrow m) => Invoker m -> String -> m ()
 createWorkspace inv name' = command inv ("workspace \"" <> name' <> "\"")
 
-moveContainer :: (MonadIO m, MonadThrow m) => Invoker -> String -> m ()
+moveContainer :: (MonadIO m, MonadThrow m) => Invoker m -> String -> m ()
 moveContainer inv name' = do
   let cmd = "move container to workspace \"" <> name' <> "\""
   command inv cmd
 
-rename :: (MonadIO m, MonadThrow m) => Invoker -> String -> String -> m ()
+rename :: (MonadIO m, MonadThrow m) => Invoker m -> String -> String -> m ()
 rename inv old new = do
   let cmd = "rename workspace \"" <> old <> "\" to \"" <> new <> "\""
   when (old /= new) $ command inv cmd
 
-renameAll :: (MonadIO m, MonadThrow m) => Invoker -> [(String, String)] -> m ()
+renameAll :: (MonadIO m, MonadThrow m) => Invoker m -> [(String, String)] -> m ()
 renameAll inv = traverse_ (uncurry $ rename inv)

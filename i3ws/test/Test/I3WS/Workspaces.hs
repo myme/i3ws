@@ -1,7 +1,9 @@
 module Test.I3WS.Workspaces where
 
 import Data.Foldable
+import I3
 import I3.Workspaces
+import I3WS.Types
 import I3WS.Workspaces
 import Test.Hspec
 import Test.I3WS.Mock
@@ -18,71 +20,71 @@ tests =
 
     describe "getWorkspaces" $
       it "get empty list of workspaces" $ do
-        mock <- defaultMock
-        ws <- getWorkspaces mock
-        map name ws `shouldBe` []
+        ws <- runMock getWorkspaces
+        liftIO (map name ws `shouldBe` [])
 
-    let createWorkspaces mock wss = do
+    let createWorkspaces wss = do
+          mock <- i3ws_invoker <$> ask
           traverse_ (createWorkspace mock) wss
-          assignNumbers mock
+          assignNumbers
 
     describe "createWorkspace" $ do
       it "creates a new workspace with number" $ do
-        mock <- defaultMock
-        createWorkspaces mock ["foo"]
-        ws <- getWorkspaces mock
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo"]
+          getWorkspaces mock
         map name ws `shouldBe` ["1:foo"]
 
       it "creates multiple workspaces with increasing numbers" $ do
-        mock <- defaultMock
-        createWorkspaces mock ["foo", "bar"]
-        ws <- getWorkspaces mock
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo", "bar"]
+          getWorkspaces mock
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "moveRight" $ do
       it "move last is identity" $ do
-        mock <- defaultMock
-        createWorkspaces mock ["foo", "bar"]
-        moveRight mock
-        ws <- getWorkspaces mock
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo", "bar"]
+          moveRight
+          getWorkspaces mock
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
       it "move left then right is identity" $ do
-        mock <- defaultMock
-        createWorkspaces mock ["foo", "bar"]
-        moveLeft mock
-        moveRight mock
-        ws <- getWorkspaces mock
+        ws <-runMock $ \mock -> do
+          createWorkspaces ["foo", "bar"]
+          moveLeft
+          moveRight
+          getWorkspaces mock
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "moveLeft" $ do
       it "moves last to first" $ do
-        mock <- defaultMock
-        createWorkspaces mock ["foo", "bar", "baz"]
-        moveLeft mock
-        moveLeft mock
-        ws <- getWorkspaces mock
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo", "bar", "baz"]
+          moveLeft
+          moveLeft
+          getWorkspaces mock
         map name ws `shouldBe` ["1:baz", "2:foo", "3:bar"]
 
     describe "renumber" $ do
       it "is unchanged with sequenced numbers" $
-        renumber ["1", "2", "3"] `shouldBe` ["1", "2", "3"]
+        renumber ":" ["1", "2", "3"] `shouldBe` ["1", "2", "3"]
 
       it "reorders unsorted numbers" $
-        renumber ["2", "3", "1"] `shouldBe` ["1", "2", "3"]
+        renumber ":" ["2", "3", "1"] `shouldBe` ["1", "2", "3"]
 
       it "only changes number" $
-        renumber ["2:foo", "3:bar", "1:baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
+        renumber ":" ["2:foo", "3:bar", "1:baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
 
       it "adds number to unnumbered workspaces" $
-        renumber ["4:foo", "bar", "baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
+        renumber ":" ["4:foo", "bar", "baz"] `shouldBe` ["1:foo", "2:bar", "3:baz"]
 
       it "rename whitespace name" $
-        renumber [" "] `shouldBe` ["1"]
+        renumber ":" [" "] `shouldBe` ["1"]
 
       it "has idempotence" $
         property $ \xs (Positive n) (Positive m) ->
-          let renames = iterate renumber xs
+          let renames = iterate (renumber ":") xs
           in renames !! n `shouldBe` renames !! m
 
     describe "parseName" $ do

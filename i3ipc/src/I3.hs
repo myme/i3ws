@@ -8,13 +8,15 @@ module I3
   , getWorkspaces
   ) where
 
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import I3.Command (command)
 import I3.IPC
 import I3.Internal (i3CmdSocket, i3SocketPath, I3(..), I3Debug(..))
 import I3.Tree (getTree)
 import I3.Workspaces (getWorkspaces)
 
-initI3 :: I3Debug -> IO Invoker
+initI3 :: (MonadIO m, MonadMask m) => I3Debug -> IO (Invoker m)
 initI3 debug = do
   socketPath <- getSocketPath
   cmdSock <- connect socketPath

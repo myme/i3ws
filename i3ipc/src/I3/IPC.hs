@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification #-}
+
 module I3.IPC where
 
 import           Control.Monad
@@ -50,18 +52,18 @@ newtype I3Error = CommandFailed String deriving (Eq, Show)
 
 instance Exception I3Error
 
-data Invoker = Invoker
-  { getInvoker    :: forall a m. (FromJSON a, Show a, MonadIO m) => Request -> m (Response a)
-  , getSubscriber :: forall a m. (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => [EventT] -> EventHandler m a -> m ()
+data Invoker m = (MonadIO m, MonadMask m, MonadThrow m) => Invoker
+  { getInvoker    :: forall a. (FromJSON a, Show a) => Request -> m (Response a)
+  , getSubscriber :: forall a. (FromJSON a, Show a) => [EventT] -> EventHandler m a -> m ()
   }
 
-i3Invoker :: I3 -> Invoker
+i3Invoker :: (MonadIO m, MonadMask m, MonadThrow m) => I3 -> Invoker m
 i3Invoker i3 = Invoker
   { getInvoker = invoke' (i3Debug i3) (i3CmdSocket i3)
   , getSubscriber = subscribe' (i3Debug i3) (i3SocketPath i3)
   }
 
-invoke :: (FromJSON a, Show a, MonadIO m, MonadThrow m) => Invoker -> Request -> m a
+invoke :: (FromJSON a, Show a, MonadIO m, MonadThrow m) => Invoker m -> Request -> m a
 invoke inv req = do
   res <- getInvoker inv req
   let (Request  reqT _) = req
@@ -70,7 +72,7 @@ invoke inv req = do
     throwM (CommandFailed "Mismatching request/response types")
   either (throwM . CommandFailed) pure response
 
-subscribe :: (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => Invoker -> [EventT] -> EventHandler m a -> m ()
+subscribe :: (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => Invoker m -> [EventT] -> EventHandler m a -> m ()
 subscribe = getSubscriber
 
 invoke' :: (FromJSON a, Show a, MonadIO m) => I3Debug -> Socket -> Request -> m (Response a)

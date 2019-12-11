@@ -2,6 +2,8 @@
 
 module I3.Tree where
 
+import Control.Monad.Catch
+import Control.Monad.IO.Class
 import Data.Aeson hiding (json)
 import Data.Aeson.TH
 import Data.Aeson.Types (typeMismatch)
@@ -58,7 +60,7 @@ $(deriveJSON
      fieldLabelModifier = \n -> fromMaybe n (stripPrefix "node_" n) }
  ''Node)
 
-getTree :: Invoker -> IO Node
+getTree :: (MonadIO m, MonadThrow m) => Invoker m -> m Node
 getTree inv = invoke inv (Request Tree mempty)
 
 flatten :: Node -> [Node]

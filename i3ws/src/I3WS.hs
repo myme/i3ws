@@ -43,13 +43,13 @@ workspaceIcons =
 numberAndAnnotate :: I3WS ()
 numberAndAnnotate = do
   inv <- i3ws_invoker <$> ask
-  wss <- liftIO (workspaces <$> getTree inv)
+  wss <- workspaces <$> getTree inv
   icons <- i3ws_icons <$> ask
   separator <- i3ws_separator <$> ask
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
       renumbered = if icons then renumber separator withIcons else map show [1 :: Int ..]
       renames = zip oldNames renumbered
-  liftIO $ renameAll inv renames
+  renameAll inv renames
   where wsIcons ws = do
           name' <- node_name ws
           pure (name', workspaceIcons ws)

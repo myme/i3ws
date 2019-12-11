@@ -40,7 +40,7 @@ swap l r = [(name r, tmp)
 moveRight :: I3WS ()
 moveRight = withEventsIgnored $ do
   inv <- i3ws_invoker <$> ask
-  wss <- liftIO (getWorkspaces inv)
+  wss <- getWorkspaces inv
   renameAll inv (foldMap reorder' $ zip wss (drop 1 wss))
   where reorder' (l, r) | focused l = swap l r
                         | otherwise = []
