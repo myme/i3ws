@@ -1,5 +1,7 @@
-let
-  nixpkgs = import ./nixpkgs.nix;
-  packages = import ./packages.nix;
-in
-  builtins.mapAttrs (name: path: builtins.getAttr name nixpkgs.haskellPackages) packages
+{ haskellPackages }:
+
+with haskellPackages;
+
+{
+  inherit fa i3ipc i3ws;
+}
