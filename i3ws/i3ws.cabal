@@ -21,6 +21,7 @@ source-repository head
 library
   exposed-modules:
       I3WS
+      I3WS.Types
       I3WS.Workspaces
   other-modules:
       Paths_i3ws
@@ -34,11 +35,13 @@ library
     , binary
     , bytestring
     , containers
+    , exceptions
     , fa
     , i3ipc
     , network
     , process
     , text
+    , transformers
     , utf8-string
   default-language: Haskell2010
 

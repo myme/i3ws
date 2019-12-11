@@ -12,6 +12,7 @@ import I3
 import I3.IPC
 import I3.Tree hiding (Workspace)
 import I3.Workspaces hiding (Workspace)
+import I3WS.Types
 import I3WS.Workspaces hiding (parse)
 
 -- | Map window class to icons.
@@ -39,31 +40,34 @@ workspaceIcons =
   unwords
 
 -- | Add number and annotations to workspaces.
-numberAndAnnotate :: Invoker -> Bool -> IO ()
-numberAndAnnotate inv icons = do
-  wss <- workspaces <$> getTree inv
+numberAndAnnotate :: I3WS ()
+numberAndAnnotate = do
+  inv <- i3ws_invoker <$> ask
+  wss <- liftIO (workspaces <$> getTree inv)
+  icons <- i3ws_icons <$> ask
   let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
       renumbered = if icons then renumber withIcons else map show [1 :: Int ..]
       renames = zip oldNames renumbered
-  renameAll inv renames
+  liftIO $ renameAll inv renames
   where wsIcons ws = do
           name' <- node_name ws
           pure (name', workspaceIcons ws)
 
 -- TODO: Ensure tree isn't fetched when not needed (e.g. focus switch)
 -- | Rename workspaces automatically based on contained windows.
-autoRenameWorkspaces :: Invoker -> Bool -> IO ()
-autoRenameWorkspaces inv icons = do
-  ignoreEvents <- newIORef False
-  numberAndAnnotate inv icons
+autoRenameWorkspaces :: I3WS ()
+autoRenameWorkspaces = do
+  ignoreEvents <- liftIO (newIORef False)
+  inv <- i3ws_invoker <$> ask
+  numberAndAnnotate
   subscribe inv [Window, Workspace, ETick] $ \case
     (ETick, payload) -> case parseTick payload of
-      Error err        -> print err
-      Success Nothing  -> pure ()
-      Success (Just i) -> writeIORef ignoreEvents i
+      Error err        -> liftIO $ print err
+      Success Nothing  -> liftIO $ pure ()
+      Success (Just i) -> liftIO $ writeIORef ignoreEvents i
     _ -> do
-      shouldIgnore <- readIORef ignoreEvents
-      unless shouldIgnore (numberAndAnnotate inv icons)
+      shouldIgnore <- liftIO (readIORef ignoreEvents)
+      unless shouldIgnore numberAndAnnotate
   where
     parseTick :: Value -> Result (Maybe Bool)
     parseTick = parse $ withObject "event" $ \event -> do

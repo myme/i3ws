@@ -2,6 +2,7 @@ module Main where
 
 import I3 hiding (command)
 import I3WS
+import I3WS.Types
 import I3WS.Workspaces
 import Options.Applicative
 
@@ -44,8 +45,13 @@ main = do
   options <- execParser $
     info (opts <**> helper) (fullDesc <> progDesc "Various handy i3 integrations")
   i3 <- initI3 (_debug options)
-  case _command options of
-    Monitor -> autoRenameWorkspaces i3 (_icons options)
-    Move MoveLeft -> moveLeft i3
-    Move MoveRight -> moveRight i3
-    New -> newWorkspace i3
+  let config = Config
+        { i3ws_debug = _debug options
+        , i3ws_icons = _icons options
+        , i3ws_invoker = i3
+        }
+  runI3WS config $ case _command options of
+    Monitor -> autoRenameWorkspaces
+    Move MoveLeft -> moveLeft
+    Move MoveRight -> moveRight
+    New -> newWorkspace
