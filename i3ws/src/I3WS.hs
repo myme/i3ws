@@ -16,6 +16,7 @@ import I3WS.Types
 import I3WS.Workspaces hiding (parse)
 
 -- | Map window class to icons.
+-- TODO: Make this configurable
 appIcon :: String -> String
 appIcon app = case map toLower app of
   "bitwarden"            -> icon Shield

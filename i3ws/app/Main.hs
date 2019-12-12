@@ -47,6 +47,7 @@ opts = Options
 -- on semantics too.
 main :: IO ()
 main = do
+  -- TODO: Add support for config file
   options <- execParser $
     info (opts <**> helper) (fullDesc <> progDesc "Various handy i3 integrations")
   i3 <- initI3 (_debug options)
