@@ -13,7 +13,7 @@ data Options = Options { _command :: Command -- ^ Sub-command handler
                        , _separator :: Maybe String -- ^ Separator between workspace number and icons
                        }
 
-data MoveDir = MoveLeft | MoveRight
+data MoveDir = MoveLeft | MoveRight | MoveNew
 data Command = Monitor | Move MoveDir | New
 
 toDebug :: Int -> I3Debug
@@ -32,12 +32,13 @@ opts = Options
         separatorParser = optional $ option str (short 's' <> long "separator" <> help "Separator between number and icons")
         readDir "left"  = Just MoveLeft
         readDir "right" = Just MoveRight
+        readDir "new"   = Just MoveNew
         readDir _ = Nothing
         commandParser = subparser (
           command "monitor" (
               info (pure Monitor) (progDesc "Automatically name i3 workspaces")) <>
           command "move" (
-              info (Move <$> argument (maybeReader readDir) idm) (progDesc "Move a workspace")) <>
+              info (Move <$> argument (maybeReader readDir) idm) (progDesc "Move a workspace or container")) <>
           command "new" (
               info (pure New) (progDesc "Create a new workspace")))
 
@@ -59,4 +60,5 @@ main = do
     Monitor -> autoRenameWorkspaces
     Move MoveLeft -> moveLeft
     Move MoveRight -> moveRight
+    Move MoveNew -> moveNew
     New -> newWorkspace
