@@ -1,12 +1,7 @@
-#!/usr/bin/env stack
-{-
-stack script
-  --resolver lts-13.12
-  --package aeson
-  --package containers
-  --package process
-  --package text
--}
+#! /usr/bin/env nix-shell
+#! nix-shell -i runghc -p 'ghc.withPackages (ps: with ps; [containers process text])'
+
+{-# LANGUAGE OverloadedStrings #-}
 
 import           Control.Arrow
 import           Data.Char
