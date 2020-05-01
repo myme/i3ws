@@ -34,6 +34,7 @@ appIcon app = case map toLower app of
   "nautilus"             -> icon FolderOpen
   "qutebrowser"          -> icon Compass
   "spotify"              -> icon Spotify
+  "systemsettings"       -> icon Cog
   _                      -> icon WindowMaximize
 
 -- | Find suitable icons for workspace applications.
