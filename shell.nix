@@ -1,6 +1,8 @@
-let
-  pkgs = import ./nix/nixpkgs.nix;
-in pkgs.haskellPackages.shellFor {
+{
+  pkgs ? import ./nix/nixpkgs.nix,
+}:
+
+pkgs.haskellPackages.shellFor {
   packages = ps: with ps; [
     fa
     i3ipc
