@@ -16,7 +16,7 @@ import I3WS.Types
 import I3WS.Workspaces hiding (parse)
 
 -- | Map window class to icons.
--- TODO: Make this configurable
+-- TODO: Make this configurable using a config file: ~/.config/i3ws.json
 appIcon :: String -> String
 appIcon app = case map toLower app of
   "bitwarden"            -> icon Shield
@@ -30,6 +30,7 @@ appIcon app = case map toLower app of
   "konsole"              -> icon Terminal
   "gnome-terminal"       -> icon Terminal
   "urxvt"                -> icon Terminal
+  "xterm-256color"       -> icon Terminal
   "nautilus"             -> icon FolderOpen
   "qutebrowser"          -> icon Compass
   "spotify"              -> icon Spotify
