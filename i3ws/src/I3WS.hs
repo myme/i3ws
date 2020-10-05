@@ -29,6 +29,7 @@ appIcon app = case map toLower app of
   "alacritty"            -> icon Terminal
   "konsole"              -> icon Terminal
   "gnome-terminal"       -> icon Terminal
+  "urxvt"                -> icon Terminal
   "nautilus"             -> icon FolderOpen
   "qutebrowser"          -> icon Compass
   "spotify"              -> icon Spotify
