@@ -5,7 +5,7 @@ module I3.IPC where
 import           Control.Monad
 import           Control.Monad.Catch
 import           Control.Monad.IO.Class
-import           Data.Aeson (FromJSON, (.:), eitherDecode, encode, withObject)
+import           Data.Aeson (eitherDecode, encode)
 import           Data.Aeson.Types
 import           Data.Binary.Get
 import           Data.Binary.Put
@@ -57,7 +57,7 @@ data Invoker m = (MonadIO m, MonadMask m, MonadThrow m) => Invoker
   , getSubscriber :: forall a. (FromJSON a, Show a) => [EventT] -> EventHandler m a -> m ()
   }
 
-i3Invoker :: (MonadIO m, MonadMask m, MonadThrow m) => I3 -> Invoker m
+i3Invoker :: (MonadFail m, MonadIO m, MonadMask m, MonadThrow m) => I3 -> Invoker m
 i3Invoker i3 = Invoker
   { getInvoker = invoke' (i3Debug i3) (i3CmdSocket i3)
   , getSubscriber = subscribe' (i3Debug i3) (i3SocketPath i3)
@@ -86,7 +86,7 @@ eventString :: EventT -> String
 eventString ETick = "tick"
 eventString ev    = map toLower (show ev)
 
-subscribe' :: (FromJSON a, Show a, MonadIO m, MonadMask m, MonadThrow m) => I3Debug -> FilePath -> [EventT] -> EventHandler m a -> m ()
+subscribe' :: (FromJSON a, Show a, MonadFail m, MonadIO m, MonadMask m, MonadThrow m) => I3Debug -> FilePath -> [EventT] -> EventHandler m a -> m ()
 subscribe' debug socketPath events handler =
   bracket (connect socketPath) close $ \sock -> do
     let req = Request Subscribe eventsJson
@@ -174,7 +174,7 @@ recv sock = do
   resType <- either (\_ -> fail "Unexpected Event") pure type'
   pure (Response resType (eitherDecode payload))
 
-recvEvent :: (FromJSON a, MonadIO m) => Socket -> I3Debug -> m (Event a)
+recvEvent :: (FromJSON a, MonadFail m, MonadIO m) => Socket -> I3Debug -> m (Event a)
 recvEvent sock debug = do
   (type', payload) <- liftIO (recvPacket sock)
   evType <- either pure (\_ -> fail "Expecting Event") type'
