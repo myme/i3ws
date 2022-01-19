@@ -1,9 +1,9 @@
-{
-  pkgs ? import ./nix/nixpkgs.nix,
+let overlay = import ./overlay.nix;
+in {
+  pkgs ? import <nixpkgs> {
+    overlays = [overlay];
+  },
 }:
-
-let
-  derivations = pkgs.callPackage (import ./nix/derivations.nix) {};
-
-in
-  derivations
+{
+  inherit (pkgs.haskellPackages) fa i3ipc i3ws;
+}
