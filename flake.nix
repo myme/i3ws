@@ -2,7 +2,7 @@
   # inspired by: https://serokell.io/blog/practical-nix-flakes#packaging-existing-applications
   description = "i3ws - Dynamic i3 wm workspace labeling";
 
-  inputs.nixpkgs.url = "nixpkgs";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }:
