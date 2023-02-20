@@ -67,7 +67,7 @@ defaultMock = do
         liftIO $ modifyIORef' mockLog (<> [show req])
         handler req
 
-  pure (Invoker handlerWithLog undefined)
+  pure (Invoker handlerWithLog (undefined :: Monad m => a -> b -> m c))
 
 renameWorkspace :: FromJSON a => IORef Workspaces -> ByteString -> ByteString -> I3WS (Response a)
 renameWorkspace ref from to = case (,) <$> decode from <*> decode to of

@@ -15,7 +15,7 @@ staticCmd res = Invoker
   { getInvoker = \case
       (Request Command _) -> pure (Response Command (eitherDecode (encode res)))
       _                   -> undefined
-  , getSubscriber = undefined
+  , getSubscriber = (undefined :: Monad m => a -> b -> m c)
   }
 
 staticTree :: ToJSON a => a -> Invoker IO
@@ -23,7 +23,7 @@ staticTree res = Invoker
   { getInvoker = \case
       (Request Tree _) -> pure (Response Tree (eitherDecode (encode res)))
       _                -> undefined
-  , getSubscriber = undefined
+  , getSubscriber = (undefined :: Monad m => a -> b -> m c)
   }
 
 tests :: Spec
@@ -63,8 +63,9 @@ tests = do
     describe "flatten" $ do
       it "always returns root as first element" $ do
         property $ \(MockTree node) -> do
-          let first:_ = flatten node
-          first `shouldBe` node
+          case flatten node of
+            [] -> undefined
+            first:_ -> first `shouldBe` node
 
     describe "leaves" $ do
       it "always returns Con, FloatingCon" $ do

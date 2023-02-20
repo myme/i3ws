@@ -4,7 +4,7 @@ import Control.Arrow ((>>>))
 import Control.Monad.Catch (bracket_)
 import Data.Aeson
 import Data.Char (isDigit, isSpace)
-import Data.Semigroup hiding (option)
+import Data.Semigroup
 import I3.IPC
 import I3.Workspaces
 import I3WS.Types
