@@ -72,14 +72,14 @@ move updateIndex = withEventsIgnored $ do
 moveRight :: I3WS ()
 moveRight = move nextIndex
   where
-    nextIndex 9 = 0
+    nextIndex 10 = 1
     nextIndex i = i + 1
 
 -- | Move current workspace one position to the left.
 moveLeft :: I3WS ()
 moveLeft = move nextIndex
   where
-    nextIndex 0 = 9
+    nextIndex 1 = 10
     nextIndex i = i - 1
 
 moveNew :: I3WS ()
