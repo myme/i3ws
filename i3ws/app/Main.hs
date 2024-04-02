@@ -10,6 +10,7 @@ import Options.Applicative
 data Options = Options { _command :: Command -- ^ Sub-command handler
                        , _debug :: I3Debug -- ^ Debug level
                        , _icons :: Bool -- ^ Use FontAwesome icons in workspace names
+                       , _noRenumber :: Bool -- ^ Renumber workspaces
                        , _separator :: Maybe String -- ^ Separator between workspace number and icons
                        }
 
@@ -26,9 +27,11 @@ opts = Options
   <$> commandParser
   <*> (toDebug . length <$> many debugParser)
   <*> iconsParser
+  <*> noRenumberParser
   <*> separatorParser
   where debugParser = flag' () (short 'd' <> long "debug" <> help "Enable debug output")
         iconsParser = flag False True (short 'i' <> long "icons" <> help "Use FontAwesome icons")
+        noRenumberParser = flag False True (long "no-renumber" <> help "Do not renumber workspaces")
         separatorParser = optional $ option str (short 's' <> long "separator" <> help "Separator between number and icons")
         readDir "left"  = Just MoveLeft
         readDir "right" = Just MoveRight
@@ -58,7 +61,7 @@ main = do
         , i3ws_invoker = i3
         }
   runI3WS config $ case _command options of
-    Monitor -> autoRenameWorkspaces
+    Monitor -> autoRenameWorkspaces (_noRenumber options)
     Move MoveLeft -> moveLeft
     Move MoveRight -> moveRight
     Move MoveNew -> moveNew

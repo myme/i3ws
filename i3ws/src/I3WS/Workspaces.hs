@@ -21,9 +21,18 @@ withEventsIgnored = bracket_ (setIgnore True) (setIgnore False)
 
 renumber :: String -> [String] -> [String]
 renumber separator = zipWith newName' (map show [1 :: Int ..])
-  where newName' i old =
-          let (_, label) = parseName separator old
-          in if null label then i else i <> separator <> label
+  where
+    newName' i old =
+      let (_, label) = parseName separator old
+       in if null label then i else i <> separator <> label
+
+-- | Change the label of a workspace.
+changeLabel :: String -> String -> String -> String
+changeLabel separator oldName newLabel =
+  let (index, _) = parseName separator oldName
+   in case index of
+        Just i -> show i <> separator <> newLabel
+        Nothing -> newLabel
 
 -- | Generate rename commands for swapping two workspaces.
 swap :: String -> Workspace -> Workspace -> [(String, String)]

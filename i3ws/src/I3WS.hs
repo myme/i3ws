@@ -46,27 +46,30 @@ workspaceIcons =
   unwords
 
 -- | Add number and annotations to workspaces.
-numberAndAnnotate :: I3WS ()
-numberAndAnnotate = do
+numberAndAnnotate :: Bool -> I3WS ()
+numberAndAnnotate noRenumber = do
   inv <- i3ws_invoker <$> ask
   wss <- workspaces <$> getTree inv
   icons <- i3ws_icons <$> ask
   separator <- i3ws_separator <$> ask
-  let (oldNames, withIcons) = unzip (mapMaybe wsIcons wss)
-      renumbered = if icons then renumber separator withIcons else map show [1 :: Int ..]
-      renames = zip oldNames renumbered
-  renameAll inv renames
-  where wsIcons ws = do
-          name' <- node_name ws
-          pure (name', workspaceIcons ws)
+  let (oldNames, newIcons) = unzip (mapMaybe wsIcons wss)
+      renames
+        | noRenumber = zipWith (changeLabel separator) oldNames newIcons
+        | icons = renumber separator newIcons
+        | otherwise = map show [1 :: Int ..]
+  renameAll inv (zip oldNames renames)
+  where
+    wsIcons ws = do
+      name' <- node_name ws
+      pure (name', workspaceIcons ws)
 
 -- TODO: Ensure tree isn't fetched when not needed (e.g. focus switch)
 -- | Rename workspaces automatically based on contained windows.
-autoRenameWorkspaces :: I3WS ()
-autoRenameWorkspaces = do
+autoRenameWorkspaces :: Bool -> I3WS ()
+autoRenameWorkspaces noRenumber = do
   ignoreEvents <- liftIO (newIORef False)
   inv <- i3ws_invoker <$> ask
-  numberAndAnnotate
+  numberAndAnnotate noRenumber
   subscribe inv [Window, Workspace, ETick] $ \case
     (ETick, payload) -> case parseTick payload of
       Error err        -> liftIO $ print err
@@ -74,7 +77,7 @@ autoRenameWorkspaces = do
       Success (Just i) -> liftIO $ writeIORef ignoreEvents i
     _ -> do
       shouldIgnore <- liftIO (readIORef ignoreEvents)
-      unless shouldIgnore numberAndAnnotate
+      unless shouldIgnore (numberAndAnnotate noRenumber)
   where
     parseTick :: Value -> Result (Maybe Bool)
     parseTick = parse $ withObject "event" $ \event -> do
