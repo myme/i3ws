@@ -1,5 +1,6 @@
 module Test.I3WS.Workspaces where
 
+import Control.Monad (replicateM_)
 import Data.Foldable
 import I3
 import I3.Workspaces
@@ -42,22 +43,45 @@ tests =
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
     describe "moveRight" $ do
-      it "move last is identity" $ do
-        ws <- runMock $ \mock -> do
-          createWorkspaces ["foo", "bar"]
-          moveRight
-          getWorkspaces mock
-        map name ws `shouldBe` ["1:foo", "2:bar"]
-
       it "move left then right is identity" $ do
-        ws <-runMock $ \mock -> do
+        ws <- runMock $ \mock -> do
           createWorkspaces ["foo", "bar"]
           moveLeft
           moveRight
           getWorkspaces mock
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
+      it "move right then left is identity" $ do
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo", "bar"]
+          moveRight
+          moveLeft
+          getWorkspaces mock
+        map name ws `shouldBe` ["1:foo", "2:bar"]
+
+      it "move last increases number" $ do
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo", "bar"]
+          moveRight
+          moveRight
+          getWorkspaces mock
+        map name ws `shouldBe` ["1:foo", "4:bar"]
+
+      it "wraps around" $ do
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo"]
+          replicateM_ 10 moveRight
+          getWorkspaces mock
+        map name ws `shouldBe` ["1:foo"]
+
     describe "moveLeft" $ do
+      it "wraps around" $ do
+        ws <- runMock $ \mock -> do
+          createWorkspaces ["foo"]
+          replicateM_ 10 moveLeft
+          getWorkspaces mock
+        map name ws `shouldBe` ["1:foo"]
+
       it "moves last to first" $ do
         ws <- runMock $ \mock -> do
           createWorkspaces ["foo", "bar", "baz"]
