@@ -1,13 +1,14 @@
 module I3WS where
 
 import Control.Arrow ((>>>))
-import Control.Monad ((<=<), unless)
-import Data.Aeson ((.:), (.:?), (.!=), withObject, withEmbeddedJSON, Result(..), Value(..))
+import Control.Monad (unless, (<=<))
+import Data.Aeson (Result (..), Value (..), withEmbeddedJSON, withObject, (.!=), (.:), (.:?))
 import Data.Aeson.Types (parse)
 import Data.Char (toLower)
 import Data.IORef
-import Data.Maybe (mapMaybe, fromMaybe)
-import FontAwesome.Icons
+import Data.Maybe (fromMaybe, mapMaybe)
+import FontAwesome.Icons (icon)
+import qualified FontAwesome.Icons as Icons
 import I3
 import I3.IPC
 import I3.Tree hiding (Workspace)
@@ -19,23 +20,24 @@ import I3WS.Workspaces hiding (parse)
 -- TODO: Make this configurable using a config file: ~/.config/i3ws.json
 appIcon :: String -> String
 appIcon app = case map toLower app of
-  "bitwarden"            -> icon Shield
-  "chromium-browser"     -> icon Chrome
+  "bitwarden"            -> icon Icons.Shield
+  "chromium-browser"     -> icon Icons.Chrome
   "cisco anyconnect secure mobility client"
-                         -> icon Lock
-  "emacs"                -> icon Code
-  "firefox"              -> icon Firefox
-  "gnome-control-center" -> icon Cog
-  "alacritty"            -> icon Terminal
-  "konsole"              -> icon Terminal
-  "gnome-terminal"       -> icon Terminal
-  "urxvt"                -> icon Terminal
-  "xterm-256color"       -> icon Terminal
-  "nautilus"             -> icon FolderOpen
-  "qutebrowser"          -> icon Compass
-  "spotify"              -> icon Spotify
-  "systemsettings"       -> icon Cog
-  _                      -> icon WindowMaximize
+                         -> icon Icons.Lock
+  "emacs"                -> icon Icons.Code
+  "firefox"              -> icon Icons.Firefox
+  "gnome-control-center" -> icon Icons.Cog
+  "alacritty"            -> icon Icons.Terminal
+  "konsole"              -> icon Icons.Terminal
+  "gnome-terminal"       -> icon Icons.Terminal
+  "urxvt"                -> icon Icons.Terminal
+  "xterm-256color"       -> icon Icons.Terminal
+  "nautilus"             -> icon Icons.FolderOpen
+  "qutebrowser"          -> icon Icons.Compass
+  "slack"                -> icon Icons.Slack
+  "spotify"              -> icon Icons.Spotify
+  "systemsettings"       -> icon Icons.Cog
+  _                      -> icon Icons.WindowMaximize
 
 -- | Find suitable icons for workspace applications.
 workspaceIcons :: Node -> String
