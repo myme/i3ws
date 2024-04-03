@@ -22,6 +22,7 @@ library
   exposed-modules:
       I3WS
       I3WS.Types
+      I3WS.Utils
       I3WS.Workspaces
   other-modules:
       Paths_i3ws

@@ -42,6 +42,27 @@ tests =
           getWorkspaces mock
         map name ws `shouldBe` ["1:foo", "2:bar"]
 
+    describe "newName" $ do
+      it "creates a new workspace name" $ do
+        ws <- runMock $ \_ -> do
+          createWorkspaces ["foo"]
+          newName
+        ws `shouldBe` "2"
+
+      it "creates a new workspace name in between" $ do
+        ws <- runMock $ \mock -> do
+          createWorkspace mock "3"
+          createWorkspace mock "1"
+          newName
+        ws `shouldBe` "2"
+
+      it "creates a new workspace big index" $ do
+        ws <- runMock $ \mock -> do
+          mapM_ (createWorkspace mock . show) [1..11 :: Int]
+          createWorkspace mock "13"
+          newName
+        ws `shouldBe` "12"
+
     describe "moveRight" $ do
       it "move left then right is identity" $ do
         ws <- runMock $ \mock -> do

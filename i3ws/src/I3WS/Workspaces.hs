@@ -4,11 +4,12 @@ import Control.Arrow ((>>>))
 import Control.Monad.Catch (bracket_)
 import Data.Aeson
 import Data.Char (isDigit, isSpace)
-import Data.List (find)
-import Data.Semigroup
+import Data.List (find, (\\))
+import Data.Maybe (mapMaybe)
 import I3.IPC
 import I3.Workspaces
 import I3WS.Types
+import I3WS.Utils (headMaybe, lastMaybe)
 import Text.ParserCombinators.ReadP
 import Text.Read (readMaybe)
 
@@ -91,8 +92,13 @@ newName :: I3WS String
 newName = do
   inv <- i3ws_invoker <$> ask
   separator <- i3ws_separator <$> ask
-  let mklast = fmap Last . fst . parseName separator . name
-  maybe "1" (show . (+1) . getLast) . foldMap mklast <$> getWorkspaces inv
+  indices <- mapMaybe (fst . parseName separator . name) <$> getWorkspaces inv
+  case lastMaybe indices of
+    Nothing -> pure "1"
+    Just lastIndex ->
+      case headMaybe $ [1 .. lastIndex] \\ indices of
+        Nothing -> pure $ show $ lastIndex + 1
+        Just i -> pure (show i)
 
 newWorkspace :: I3WS ()
 newWorkspace = do
